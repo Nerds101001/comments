@@ -1965,9 +1965,9 @@
     team: JSON.parse(JSON.stringify(DEFAULT_TEAM)),
     seniors: JSON.parse(JSON.stringify(DEFAULT_SENIORS)),
     integrations: {
-      claude: { connected: true, api_key: 'sk-ant-***********...HQg9k', model: 'claude-sonnet-4-20250514' },
-      whatsapp: { connected: false, phone_id: '', access_token: '', verify_token: '' },
-      crm: { connected: false, endpoint: '', api_key: '' },
+      ai: { connected: false, api_key_preview: '', model: '', provider: 'nvidia' },
+      whatsapp: { connected: false, phone_number_id: '', verify_token: '' },
+      crm: { connected: false, base_url: '', poll_interval_minutes: 60 },
       visit_app: { connected: false, endpoint: '', api_key: '' },
       email: { connected: false, smtp_host: '', smtp_port: '587', smtp_user: '', smtp_pass: '' },
       sms: { connected: false, gateway: 'twilio', sid: '', token: '' }
@@ -1987,7 +1987,29 @@
   };
 
   let conversations = [];
-  let settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+  // Start with empty settings - will be populated from API
+  let settings = {
+    team: {},
+    seniors: {},
+    integrations: {
+      ai: { connected: false, api_key_preview: '', model: '', provider: 'nvidia' },
+      whatsapp: { connected: false, phone_number_id: '', verify_token: '' },
+      crm: { connected: false, base_url: '', poll_interval_minutes: 60 },
+      visit_app: { connected: false, endpoint: '', api_key: '' },
+      email: { connected: false, smtp_host: '', smtp_port: '587', smtp_user: '', smtp_pass: '' },
+      sms: { connected: false, gateway: 'twilio', sid: '', token: '' }
+    },
+    senior_layer: {
+      enabled: true,
+      escalation_window_hours: 24
+    },
+    escalation_rules: {
+      pricing_threshold_pct: 10,
+      key_account_ltv: 2000000,
+      ai_confidence_threshold: 70,
+      max_unresponsive_nudges: 3
+    }
+  };
   let activeFilter = 'all';
   let activeConvId = null;
   let activeTab = 'dash';
@@ -2000,26 +2022,111 @@
   // ============================================================
   async function loadData() {
     try {
+      console.log("🔄 Loading data from backend API...");
+      
       // 1. Fetch Team (Reps)
       const teamRes = await fetch('/api/settings/team');
       if (teamRes.ok) {
         const teamArr = await teamRes.json();
+        console.log("✅ Loaded team members:", teamArr.length);
         settings.team = {};
-        teamArr.forEach(r => { settings.team[r.id] = r; });
+        teamArr.forEach(r => { 
+          settings.team[r.id] = {
+            ...r,
+            avatar: r.avatar || r.name.substring(0,2).toUpperCase(),
+            color: r.color || '#007AFF'
+          };
+        });
+      } else {
+        console.warn("⚠️ Failed to load team:", teamRes.status);
       }
 
       // 2. Fetch Seniors
       const seniorsRes = await fetch('/api/settings/seniors');
       if (seniorsRes.ok) {
         const seniorsArr = await seniorsRes.json();
+        console.log("✅ Loaded seniors:", seniorsArr.length);
         settings.seniors = {};
-        seniorsArr.forEach(s => { settings.seniors[s.id] = s; });
+        seniorsArr.forEach(s => { 
+          settings.seniors[s.id] = {
+            ...s,
+            avatar: s.avatar || s.name.substring(0,2).toUpperCase(),
+            color: s.color || '#AF52DE',
+            enabled: s.enabled !== false
+          };
+        });
+      } else {
+        console.warn("⚠️ Failed to load seniors:", seniorsRes.status);
       }
 
-      // 3. Fetch Conversations
+      // 3. Fetch Settings (integrations, escalation rules, etc.)
+      const settingsRes = await fetch('/api/settings');
+      if (settingsRes.ok) {
+        const settingsData = await settingsRes.json();
+        console.log("✅ Loaded settings from API");
+        console.log("   - AI Provider:", settingsData.integrations?.ai?.provider);
+        console.log("   - AI Model:", settingsData.integrations?.ai?.model);
+        console.log("   - AI Connected:", settingsData.integrations?.ai?.connected);
+        console.log("   - WhatsApp Connected:", settingsData.integrations?.whatsapp?.connected);
+        console.log("   - CRM Connected:", settingsData.integrations?.crm?.connected);
+        
+        // Update integrations
+        if (settingsData.integrations) {
+          settings.integrations = {
+            ...settings.integrations,
+            ...settingsData.integrations
+          };
+        }
+        // Update escalation rules
+        if (settingsData.escalation_rules) {
+          settings.escalation_rules = {
+            ...settings.escalation_rules,
+            ...settingsData.escalation_rules
+          };
+        }
+        // Update senior layer
+        if (settingsData.senior_layer) {
+          settings.senior_layer = {
+            ...settings.senior_layer,
+            ...settingsData.senior_layer
+          };
+        }
+        
+        // Update team from settings response (it includes team array)
+        if (settingsData.team && settingsData.team.length > 0) {
+          console.log("✅ Updating team from settings response:", settingsData.team.length);
+          settings.team = {};
+          settingsData.team.forEach(r => { 
+            settings.team[r.id] = {
+              ...r,
+              avatar: r.avatar || r.name.substring(0,2).toUpperCase(),
+              color: r.color || '#007AFF'
+            };
+          });
+        }
+        
+        // Update seniors from settings response
+        if (settingsData.seniors && settingsData.seniors.length > 0) {
+          console.log("✅ Updating seniors from settings response:", settingsData.seniors.length);
+          settings.seniors = {};
+          settingsData.seniors.forEach(s => { 
+            settings.seniors[s.id] = {
+              ...s,
+              avatar: s.avatar || s.name.substring(0,2).toUpperCase(),
+              color: s.color || '#AF52DE',
+              enabled: s.enabled !== false
+            };
+          });
+        }
+      } else {
+        console.warn("⚠️ Failed to load settings:", settingsRes.status);
+      }
+
+      // 4. Fetch Conversations
       const convsRes = await fetch('/api/conversations');
       if (convsRes.ok) {
         const rawConvs = await convsRes.json();
+        console.log("✅ Loaded conversations:", rawConvs.length);
         conversations = rawConvs.map(c => ({
           ...c,
           senior_assigned: c.senior_assigned_id,
@@ -2039,17 +2146,24 @@
           return dateB - dateA;
         });
         
-        console.log("Conversations sorted by date");
+        console.log("✅ Data loaded successfully from backend");
+        console.log("   - Team members:", Object.keys(settings.team).length);
+        console.log("   - Seniors:", Object.keys(settings.seniors).length);
+        console.log("   - Conversations:", conversations.length);
         return;
+      } else {
+        console.warn("⚠️ Failed to load conversations:", convsRes.status);
       }
     } catch (e) {
-      console.error("Backend fetch failed, falling back to local seeds", e);
+      console.error("❌ Backend fetch failed:", e);
+      console.error("   Make sure the backend is running and accessible");
     }
 
-    // Fallback to seeds if API is unavailable or fails
-    conversations = JSON.parse(JSON.stringify(SEED_CONVERSATIONS));
-    conversations.forEach(c => { if (!c.senior_thread) c.senior_thread = []; });
-    settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+    // If we get here and have no data, show a message but don't use fallback
+    if (Object.keys(settings.team).length === 0 && Object.keys(settings.seniors).length === 0) {
+      console.warn("⚠️ No data loaded from backend. Settings will be empty.");
+      console.warn("   Add team members and seniors using the UI, or check backend connection.");
+    }
   }
 
   async function saveData() {
@@ -3388,23 +3502,27 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
         <div class="settings-group-head">
           <div class="sg-icon" style="background: var(--orange-soft); color: var(--orange);">◆</div>
           <div class="sg-info">
-            <div class="sg-title">Claude API</div>
+            <div class="sg-title">AI API</div>
             <div class="sg-desc">Powers all AI message generation, analysis, and reasoning</div>
           </div>
-          <span class="sg-status ${ig.claude.connected ? 'connected' : 'disconnected'}">${ig.claude.connected ? '● Connected' : 'Not connected'}</span>
+          <span class="sg-status ${ig.ai.connected ? 'connected' : 'disconnected'}">${ig.ai.connected ? '● Connected' : 'Not connected'}</span>
         </div>
         <div class="settings-fields">
           <div class="field-row">
+            <label class="field-label">Provider</label>
+            <input class="field-input mono" type="text" value="${escapeHtml(ig.ai.provider || 'nvidia').toUpperCase()}" readonly style="text-transform: uppercase;">
+          </div>
+          <div class="field-row">
             <label class="field-label">API Key <span class="req">*</span></label>
-            <input class="field-input mono" type="password" value="${escapeHtml(ig.claude.api_key)}" placeholder="sk-ant-..." onchange="updateSetting('integrations.claude.api_key', this.value)">
+            <input class="field-input mono" type="password" value="${escapeHtml(ig.ai.api_key_preview || '')}" placeholder="${ig.ai.connected ? '●●●●●●●●' : 'Not configured'}" readonly>
           </div>
           <div class="field-row">
             <label class="field-label">Model</label>
-            <input class="field-input mono" type="text" value="${escapeHtml(ig.claude.model)}" onchange="updateSetting('integrations.claude.model', this.value)">
+            <input class="field-input mono" type="text" value="${escapeHtml(ig.ai.model || 'Not configured')}" readonly>
           </div>
         </div>
         <div class="settings-actions">
-          <button class="btn btn-secondary btn-sm" onclick="testConnection('claude')">Test connection</button>
+          <button class="btn btn-secondary btn-sm" onclick="testConnection('ai')">Test connection</button>
         </div>
       </div>
 
@@ -3420,20 +3538,19 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
         <div class="settings-fields">
           <div class="field-row">
             <label class="field-label">Phone Number ID <span class="req">*</span></label>
-            <input class="field-input mono" type="text" value="${escapeHtml(ig.whatsapp.phone_id)}" placeholder="106540352242922" onchange="updateSetting('integrations.whatsapp.phone_id', this.value)">
+            <input class="field-input mono" type="text" value="${escapeHtml(ig.whatsapp.phone_number_id || '')}" placeholder="${ig.whatsapp.connected ? 'Configured' : 'Not configured'}" readonly>
           </div>
           <div class="field-row">
             <label class="field-label">Access Token <span class="req">*</span></label>
-            <input class="field-input mono" type="password" value="${escapeHtml(ig.whatsapp.access_token)}" placeholder="EAAB..." onchange="updateSetting('integrations.whatsapp.access_token', this.value)">
+            <input class="field-input mono" type="password" value="${ig.whatsapp.connected ? '●●●●●●●●●●●●' : ''}" placeholder="${ig.whatsapp.connected ? 'Configured' : 'Not configured'}" readonly>
           </div>
           <div class="field-row">
             <label class="field-label">Webhook Verify Token</label>
-            <input class="field-input mono" type="text" value="${escapeHtml(ig.whatsapp.verify_token)}" placeholder="hi-tech-2026" onchange="updateSetting('integrations.whatsapp.verify_token', this.value)">
+            <input class="field-input mono" type="text" value="${escapeHtml(ig.whatsapp.verify_token || '')}" placeholder="${ig.whatsapp.connected ? 'Configured' : 'Not configured'}" readonly>
           </div>
         </div>
         <div class="settings-actions">
           <button class="btn btn-secondary btn-sm" onclick="testConnection('whatsapp')">Test connection</button>
-          <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save</button>
         </div>
       </div>
 
@@ -3449,16 +3566,15 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
         <div class="settings-fields">
           <div class="field-row">
             <label class="field-label">API Endpoint <span class="req">*</span></label>
-            <input class="field-input mono" type="text" value="${escapeHtml(ig.crm.endpoint)}" placeholder="https://api.hitech-crm.in/v1/comments" onchange="updateSetting('integrations.crm.endpoint', this.value)">
+            <input class="field-input mono" type="text" value="${escapeHtml(ig.crm.base_url || '')}" placeholder="https://api-crm.rustx.net" readonly>
           </div>
           <div class="field-row">
             <label class="field-label">API Key <span class="req">*</span></label>
-            <input class="field-input mono" type="password" value="${escapeHtml(ig.crm.api_key)}" onchange="updateSetting('integrations.crm.api_key', this.value)">
+            <input class="field-input mono" type="password" value="${ig.crm.connected ? '***' : ''}" readonly>
           </div>
         </div>
         <div class="settings-actions">
           <button class="btn btn-secondary btn-sm" onclick="testConnection('crm')">Test connection</button>
-          <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save</button>
         </div>
       </div>
 
@@ -3983,6 +4099,29 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
 
   // OLD addTeamMember replaced — keep for backwards compat
   async function addTeamMember() { openAddTeamMemberModal(); }
+  
+  // Refresh settings from backend
+  async function refreshSettings() {
+    console.log("Refreshing settings from backend...");
+    const btn = event?.target;
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loader"></span> Loading...';
+    }
+    try {
+      await loadData();
+      render();
+      console.log("Settings refreshed successfully");
+    } catch (error) {
+      console.error("Failed to refresh settings:", error);
+      alert("Failed to refresh settings. Check console for details.");
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '⟳ Refresh';
+      }
+    }
+  }
 
   async function removeTeamMember(rid) {
     const r = settings.team[rid];
