@@ -1659,6 +1659,7 @@
         <span class="seg-badge" id="ccBadge">0</span>
       </button>
       <button class="seg-btn" data-tab="settings" onclick="setTab('settings')">Settings</button>
+      <button class="seg-btn" data-tab="ai-training" onclick="setTab('ai-training')">🧠 AI Training</button>
     </nav>
     <div class="topbar-right">
       <button class="btn btn-ghost btn-sm" onclick="resetData()">Reset</button>
@@ -1747,6 +1748,11 @@
   <!-- SETTINGS -->
   <main class="view" id="viewSettings">
     <div class="settings-container" id="settingsContainer"></div>
+  </main>
+
+  <!-- AI TRAINING -->
+  <main class="view" id="viewAITraining">
+    <div class="settings-container" id="aiTrainingContainer"></div>
   </main>
 
 </div>
@@ -2993,6 +2999,319 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
   }
 
   // ============================================================
+  // AI TRAINING VIEW
+  // ============================================================
+  let knowledgeEntries = [];
+  let editingKnowledgeId = null;
+
+  async function renderAITraining() {
+    const container = document.getElementById('aiTrainingContainer');
+    
+    // Load knowledge entries
+    await loadKnowledgeEntries();
+    
+    container.innerHTML = `
+      <div class="settings-header">
+        <h1>🧠 AI Training</h1>
+        <p>Train your AI to write better nudges. Add examples of good messages, product information, company terminology, and communication guidelines. The AI will automatically learn from these and generate more personalized responses.</p>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-head">
+          <div class="sg-icon" style="background: var(--green-soft); color: var(--green);">✨</div>
+          <div class="sg-info">
+            <div class="sg-title">Knowledge Base</div>
+            <div class="sg-desc">${knowledgeEntries.length} entries · AI uses top 10 most relevant when generating nudges</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="showAddKnowledgeForm()">+ Add Knowledge</button>
+        </div>
+
+        <div id="knowledgeForm" style="display: none; padding: 20px; background: var(--bg); border-radius: var(--radius-md); margin: 16px 0;">
+          <h3 style="margin-bottom: 16px; font-size: 15px; font-weight: 600;">Add New Knowledge Entry</h3>
+          
+          <div class="field-row">
+            <label class="field-label">Category <span class="req">*</span></label>
+            <select id="knowledgeCategory" class="field-input">
+              <option value="example_nudge">Example Nudge - Real examples of good messages</option>
+              <option value="product_info">Product Info - Product knowledge & features</option>
+              <option value="terminology">Terminology - Company-specific terms</option>
+              <option value="guideline">Guideline - Communication rules & best practices</option>
+            </select>
+          </div>
+
+          <div class="field-row">
+            <label class="field-label">Title <span class="req">*</span></label>
+            <input id="knowledgeTitle" class="field-input" type="text" placeholder="e.g., Follow-up on delayed dispatch">
+          </div>
+
+          <div class="field-row">
+            <label class="field-label">Content <span class="req">*</span></label>
+            <textarea id="knowledgeContent" class="field-input" rows="4" placeholder="e.g., Ravi, the Sharma Industries dispatch — has it been raised? Confirm by EOD."></textarea>
+          </div>
+
+          <div class="field-row">
+            <label class="field-label">Language</label>
+            <select id="knowledgeLanguage" class="field-input">
+              <option value="all">All Languages</option>
+              <option value="hinglish_80">Hinglish 80% (English-led with Hindi)</option>
+              <option value="hinglish_60">Hinglish 60% (More Hindi)</option>
+              <option value="english_light_hindi">English with light Hindi</option>
+              <option value="english_only">English Only</option>
+            </select>
+          </div>
+
+          <div class="field-row">
+            <label class="field-label">Priority (1-10, higher = more important)</label>
+            <input id="knowledgePriority" class="field-input" type="number" min="1" max="10" value="5">
+          </div>
+
+          <div class="settings-actions">
+            <button class="btn btn-secondary btn-sm" onclick="hideKnowledgeForm()">Cancel</button>
+            <button class="btn btn-primary btn-sm" onclick="saveKnowledgeEntry()">
+              <span id="saveKnowledgeBtn">Save Entry</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="knowledge-list">
+          ${renderKnowledgeList()}
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-head">
+          <div class="sg-icon" style="background: var(--blue-soft); color: var(--blue);">📊</div>
+          <div class="sg-info">
+            <div class="sg-title">Statistics</div>
+            <div class="sg-desc">Overview of your AI knowledge base</div>
+          </div>
+        </div>
+        <div class="knowledge-stats">
+          ${renderKnowledgeStats()}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderKnowledgeList() {
+    if (knowledgeEntries.length === 0) {
+      return `
+        <div style="text-align: center; padding: 40px 20px; color: var(--text-3);">
+          <div style="font-size: 48px; margin-bottom: 12px;">🧠</div>
+          <div style="font-size: 15px; font-weight: 600; margin-bottom: 6px;">No knowledge entries yet</div>
+          <div style="font-size: 13px;">Add your first entry to start training the AI</div>
+        </div>
+      `;
+    }
+
+    const categories = {
+      example_nudge: { label: 'Example Nudges', icon: '💬', color: 'green' },
+      product_info: { label: 'Product Info', icon: '📦', color: 'blue' },
+      terminology: { label: 'Terminology', icon: '📖', color: 'purple' },
+      guideline: { label: 'Guidelines', icon: '📋', color: 'orange' }
+    };
+
+    return knowledgeEntries.map(entry => {
+      const cat = categories[entry.category] || { label: entry.category, icon: '•', color: 'blue' };
+      return `
+        <div class="knowledge-entry" style="background: var(--surface); border: 1px solid var(--separator); border-radius: var(--radius-md); padding: 16px; margin-bottom: 12px;">
+          <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <span style="font-size: 18px;">${cat.icon}</span>
+                <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--${cat.color});">${cat.label}</span>
+                <span style="font-size: 11px; color: var(--text-3);">Priority: ${entry.priority}</span>
+                ${entry.language !== 'all' ? `<span style="font-size: 11px; color: var(--text-3);">· ${entry.language}</span>` : ''}
+                ${!entry.is_active ? `<span style="font-size: 11px; background: var(--red-soft); color: var(--red); padding: 2px 6px; border-radius: 4px;">Inactive</span>` : ''}
+              </div>
+              <div style="font-size: 14px; font-weight: 600; margin-bottom: 6px;">${escapeHtml(entry.title)}</div>
+              <div style="font-size: 13px; color: var(--text-2); line-height: 1.5;">${escapeHtml(entry.content)}</div>
+            </div>
+            <div style="display: flex; gap: 6px; margin-left: 12px;">
+              <button class="btn btn-ghost btn-sm" onclick="editKnowledgeEntry(${entry.id})" title="Edit">✏️</button>
+              <button class="btn btn-ghost btn-sm" onclick="toggleKnowledgeActive(${entry.id}, ${!entry.is_active})" title="${entry.is_active ? 'Deactivate' : 'Activate'}">
+                ${entry.is_active ? '👁️' : '👁️‍🗨️'}
+              </button>
+              <button class="btn btn-ghost btn-sm" onclick="deleteKnowledgeEntry(${entry.id})" title="Delete" style="color: var(--red);">🗑️</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderKnowledgeStats() {
+    const stats = {
+      total: knowledgeEntries.length,
+      active: knowledgeEntries.filter(e => e.is_active).length,
+      by_category: {}
+    };
+
+    knowledgeEntries.forEach(e => {
+      if (e.is_active) {
+        stats.by_category[e.category] = (stats.by_category[e.category] || 0) + 1;
+      }
+    });
+
+    const categoryLabels = {
+      example_nudge: 'Example Nudges',
+      product_info: 'Product Info',
+      terminology: 'Terminology',
+      guideline: 'Guidelines'
+    };
+
+    return `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; padding: 16px;">
+        <div style="text-align: center;">
+          <div style="font-size: 32px; font-weight: 700; color: var(--blue);">${stats.total}</div>
+          <div style="font-size: 13px; color: var(--text-3);">Total Entries</div>
+        </div>
+        <div style="text-align: center;">
+          <div style="font-size: 32px; font-weight: 700; color: var(--green);">${stats.active}</div>
+          <div style="font-size: 13px; color: var(--text-3);">Active Entries</div>
+        </div>
+        ${Object.entries(stats.by_category).map(([cat, count]) => `
+          <div style="text-align: center;">
+            <div style="font-size: 32px; font-weight: 700; color: var(--purple);">${count}</div>
+            <div style="font-size: 13px; color: var(--text-3);">${categoryLabels[cat] || cat}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  async function loadKnowledgeEntries() {
+    try {
+      const res = await fetch('/api/knowledge/entries');
+      if (res.ok) {
+        knowledgeEntries = await res.json();
+      }
+    } catch (err) {
+      console.error('Failed to load knowledge entries:', err);
+    }
+  }
+
+  function showAddKnowledgeForm() {
+    editingKnowledgeId = null;
+    document.getElementById('knowledgeForm').style.display = 'block';
+    document.getElementById('knowledgeCategory').value = 'example_nudge';
+    document.getElementById('knowledgeTitle').value = '';
+    document.getElementById('knowledgeContent').value = '';
+    document.getElementById('knowledgeLanguage').value = 'all';
+    document.getElementById('knowledgePriority').value = '5';
+    document.getElementById('saveKnowledgeBtn').textContent = 'Save Entry';
+  }
+
+  function hideKnowledgeForm() {
+    document.getElementById('knowledgeForm').style.display = 'none';
+    editingKnowledgeId = null;
+  }
+
+  async function saveKnowledgeEntry() {
+    const category = document.getElementById('knowledgeCategory').value;
+    const title = document.getElementById('knowledgeTitle').value.trim();
+    const content = document.getElementById('knowledgeContent').value.trim();
+    const language = document.getElementById('knowledgeLanguage').value;
+    const priority = parseInt(document.getElementById('knowledgePriority').value);
+
+    if (!title || !content) {
+      alert('Please fill in title and content');
+      return;
+    }
+
+    const data = {
+      category,
+      title,
+      content,
+      language,
+      priority,
+      created_by: 'User'
+    };
+
+    try {
+      const url = editingKnowledgeId 
+        ? `/api/knowledge/entries/${editingKnowledgeId}`
+        : '/api/knowledge/entries';
+      const method = editingKnowledgeId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (res.ok) {
+        hideKnowledgeForm();
+        await renderAITraining();
+        alert(editingKnowledgeId ? 'Knowledge entry updated!' : 'Knowledge entry added!');
+      } else {
+        alert('Failed to save knowledge entry');
+      }
+    } catch (err) {
+      console.error('Failed to save knowledge entry:', err);
+      alert('Error saving knowledge entry');
+    }
+  }
+
+  async function editKnowledgeEntry(id) {
+    const entry = knowledgeEntries.find(e => e.id === id);
+    if (!entry) return;
+
+    editingKnowledgeId = id;
+    document.getElementById('knowledgeForm').style.display = 'block';
+    document.getElementById('knowledgeCategory').value = entry.category;
+    document.getElementById('knowledgeTitle').value = entry.title;
+    document.getElementById('knowledgeContent').value = entry.content;
+    document.getElementById('knowledgeLanguage').value = entry.language;
+    document.getElementById('knowledgePriority').value = entry.priority;
+    document.getElementById('saveKnowledgeBtn').textContent = 'Update Entry';
+    
+    // Scroll to form
+    document.getElementById('knowledgeForm').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  async function toggleKnowledgeActive(id, isActive) {
+    try {
+      const res = await fetch(`/api/knowledge/entries/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_active: isActive })
+      });
+
+      if (res.ok) {
+        await renderAITraining();
+      } else {
+        alert('Failed to update entry');
+      }
+    } catch (err) {
+      console.error('Failed to toggle entry:', err);
+      alert('Error updating entry');
+    }
+  }
+
+  async function deleteKnowledgeEntry(id) {
+    if (!confirm('Are you sure you want to delete this knowledge entry? This cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/knowledge/entries/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (res.ok) {
+        await renderAITraining();
+        alert('Knowledge entry deleted');
+      } else {
+        alert('Failed to delete entry');
+      }
+    } catch (err) {
+      console.error('Failed to delete entry:', err);
+      alert('Error deleting entry');
+    }
+  }
+
+  // ============================================================
   // COMMAND CENTRE VIEW
   // ============================================================
   function renderCommandCentre() {
@@ -3822,9 +4141,9 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
     document.querySelectorAll('.seg-btn').forEach(t => {
       t.classList.toggle('active', t.dataset.tab === activeTab);
     });
-    ['Dash', 'Inbox', 'CC', 'Settings'].forEach(v => {
-      const id = v === 'Dash' ? 'viewDash' : v === 'CC' ? 'viewCC' : 'view' + v;
-      const tabId = v === 'Dash' ? 'dash' : v === 'CC' ? 'cc' : v.toLowerCase();
+    ['Dash', 'Inbox', 'CC', 'Settings', 'AITraining'].forEach(v => {
+      const id = v === 'Dash' ? 'viewDash' : v === 'CC' ? 'viewCC' : v === 'AITraining' ? 'viewAITraining' : 'view' + v;
+      const tabId = v === 'Dash' ? 'dash' : v === 'CC' ? 'cc' : v === 'AITraining' ? 'ai-training' : v.toLowerCase();
       document.getElementById(id).classList.toggle('active', activeTab === tabId);
     });
 
@@ -3839,6 +4158,11 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
     else if (activeTab === 'settings') {
       renderSettings();
       // Load CRM sync status after rendering
+      loadCRMSyncStatus();
+    }
+    else if (activeTab === 'ai-training') {
+      renderAITraining();
+    }
       setTimeout(() => loadCRMSyncStatus(), 100);
     }
   }
