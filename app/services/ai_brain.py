@@ -124,6 +124,9 @@ async def generate_nudge(
     lang_block = LANGUAGE_INSTRUCTIONS.get(lang, LANGUAGE_INSTRUCTIONS["hinglish_80"])
     intensity_block = INTENSITY_INSTRUCTIONS.get(intensity, INTENSITY_INSTRUCTIONS["standard"])
     style_block = await style_learner.get_style_context(db, lang)
+    
+    # Get knowledge base context
+    knowledge_block = await _get_knowledge_context(db, lang)
 
     if customer:
         cust_block = (
@@ -165,6 +168,8 @@ next action. End with Revert/Update me/Confirm by EOD. Never lecture, never than
 profusely, no placeholders.
 
 {style_block}
+
+{knowledge_block}
 
 REP: {rep.name} (EMP {rep.emp_code}, {rep.region}, role: {rep.role})
 {cust_block}
@@ -425,3 +430,57 @@ Write ONE sharp follow-up question for the rep. WhatsApp-style, 1-2 lines.
 Output JUST the question text."""
 
     return await _call_ai(prompt, max_tokens=200)
+
+
+
+async def _get_knowledge_context(db: AsyncSession, language: str) -> str:
+    """Get relevant knowledge base entries for AI context."""
+    from sqlalchemy import select
+    from app.models import AIKnowledgeBase
+    
+    # Get active knowledge entries for this language (or "all")
+    result = await db.execute(
+        select(AIKnowledgeBase)
+        .where(AIKnowledgeBase.is_active == True)
+        .where(
+            (AIKnowledgeBase.language == language) | (AIKnowledgeBase.language == "all")
+        )
+        .order_by(AIKnowledgeBase.priority.desc())
+        .limit(10)  # Top 10 most important entries
+    )
+    entries = result.scalars().all()
+    
+    if not entries:
+        return ""
+    
+    # Format knowledge entries by category
+    knowledge_sections = {
+        "example_nudge": [],
+        "product_info": [],
+        "terminology": [],
+        "guideline": [],
+    }
+    
+    for entry in entries:
+        if entry.category in knowledge_sections:
+            knowledge_sections[entry.category].append(f"• {entry.title}: {entry.content}")
+    
+    # Build knowledge block
+    blocks = []
+    
+    if knowledge_sections["example_nudge"]:
+        blocks.append("EXAMPLE NUDGES (learn from these):\n" + "\n".join(knowledge_sections["example_nudge"]))
+    
+    if knowledge_sections["product_info"]:
+        blocks.append("PRODUCT KNOWLEDGE:\n" + "\n".join(knowledge_sections["product_info"]))
+    
+    if knowledge_sections["terminology"]:
+        blocks.append("COMPANY TERMINOLOGY:\n" + "\n".join(knowledge_sections["terminology"]))
+    
+    if knowledge_sections["guideline"]:
+        blocks.append("COMMUNICATION GUIDELINES:\n" + "\n".join(knowledge_sections["guideline"]))
+    
+    if blocks:
+        return "\n\n".join(blocks)
+    
+    return ""

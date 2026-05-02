@@ -247,6 +247,29 @@ class AppSetting(Base):
 
 
 # ─────────────────────────────────────────────────────────
+#  AI KNOWLEDGE BASE  (training data for personalized nudges)
+# ─────────────────────────────────────────────────────────
+class AIKnowledgeBase(Base):
+    """
+    Knowledge base entries that train the AI on how to write nudges.
+    Users can add examples of good nudges, company-specific terminology,
+    product knowledge, and communication guidelines.
+    """
+    __tablename__ = "ai_knowledge_base"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    category: Mapped[str] = mapped_column(String(50), index=True)           # example_nudge, product_info, terminology, guideline
+    title: Mapped[str] = mapped_column(String(200))
+    content: Mapped[str] = mapped_column(Text)                              # The actual knowledge/example
+    language: Mapped[str] = mapped_column(String(30), default="all")        # all, hinglish_80, english_only, etc.
+    priority: Mapped[int] = mapped_column(Integer, default=5)               # 1-10, higher = more important
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_by: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+# ─────────────────────────────────────────────────────────
 #  CHECK-IN / CHECK-OUT  (sales rep visit tracking)
 # ─────────────────────────────────────────────────────────
 class CheckIn(Base):

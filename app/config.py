@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     CRM_TOKEN: str = ""
     CRM_USERNAME: str = ""
     CRM_PASSWORD: str = ""
-    CRM_POLL_INTERVAL_MINUTES: int = 30
+    CRM_POLL_INTERVAL_MINUTES: int = 60  # Auto-sync every 60 minutes (1 hour)
 
     # ── Gmail (optional) ─────────────────────
     GMAIL_CLIENT_ID: str = ""

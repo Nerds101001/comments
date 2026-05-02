@@ -290,6 +290,10 @@ app.include_router(rep_dashboard.router)
 from app.api import reps
 app.include_router(reps.router)
 
+# Import and include knowledge base router
+from app.api import knowledge_base
+app.include_router(knowledge_base.router)
+
 
 # ─────────────────────────────────────────────────────────
 #  FRONTEND (serve index.html for all non-API routes)

@@ -1,0 +1,160 @@
+<!-- 
+  HTML Updates for Rep Selector and Pagination
+  Replace the sidebar-head section in frontend/index.html with this:
+-->
+
+<div class="sidebar-head">
+  <div class="sidebar-title">
+    <span class="h">Conversations</span>
+    <span class="count" id="sideCount">0 active</span>
+  </div>
+  
+  <!-- NEW: Category Filters -->
+  <div class="filter-section">
+    <div class="filter-label">Category</div>
+    <div class="filter-chips" id="category-filters">
+      <button class="chip active" data-rep-type="" onclick="filterByRepType('')">All</button>
+      <button class="chip" data-rep-type="sales" onclick="filterByRepType('sales')">Sales</button>
+      <button class="chip" data-rep-type="ccare" onclick="filterByRepType('ccare')">CCare</button>
+      <button class="chip" data-rep-type="newbiz" onclick="filterByRepType('newbiz')">NewBiz</button>
+    </div>
+  </div>
+  
+  <!-- NEW: Rep Selector -->
+  <div class="filter-section">
+    <div class="filter-label">Representative</div>
+    <select id="rep-selector" class="rep-selector" onchange="filterByRep(this.value)">
+      <option value="">All Representatives</option>
+    </select>
+  </div>
+  
+  <!-- Existing Handler Filters -->
+  <div class="filter-section">
+    <div class="filter-label">Status</div>
+    <div class="filter-chips" id="filterChips">
+      <button class="chip active" data-filter="all" onclick="setFilter('all')">All</button>
+      <button class="chip" data-filter="ai" onclick="setFilter('ai')">AI</button>
+      <button class="chip" data-filter="escalated" onclick="setFilter('escalated')">Escalated</button>
+      <button class="chip" data-filter="senior" onclick="setFilter('senior')">Senior</button>
+      <button class="chip" data-filter="approval" onclick="setFilter('approval')">Approve</button>
+      <button class="chip" data-filter="mukul" onclick="setFilter('mukul')">Yours</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW: Add this AFTER the conv-list div, BEFORE the closing </aside> tag -->
+<div class="pagination-controls">
+  <button id="prev-page" class="btn-pagination" onclick="goToPreviousPage()" disabled>
+    ← Previous
+  </button>
+  <span class="page-info">
+    <span id="page-start">1</span>-<span id="page-end">500</span> 
+    of <span id="total-count">9,993</span>
+  </span>
+  <button id="next-page" class="btn-pagination" onclick="goToNextPage()">
+    Next →
+  </button>
+</div>
+
+<!-- 
+  CSS Updates - Add this to the <style> section
+-->
+<style>
+.filter-section {
+  margin-bottom: 12px;
+}
+
+.filter-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  padding: 0 4px;
+}
+
+.rep-selector {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--separator);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.rep-selector:hover {
+  border-color: var(--blue);
+}
+
+.rep-selector:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--blue-tint);
+}
+
+.rep-selector option {
+  padding: 8px;
+}
+
+.pagination-controls {
+  padding: 12px 18px;
+  border-top: 1px solid var(--separator);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--surface);
+}
+
+.btn-pagination {
+  padding: 6px 12px;
+  border: 1px solid var(--separator);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-pagination:hover:not(:disabled) {
+  background: var(--bg);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
+.btn-pagination:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.page-info {
+  font-size: 11px;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+}
+
+.rep-type-tag {
+  font-size: 8px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--text-3);
+  margin-left: 4px;
+  letter-spacing: 0.04em;
+}
+
+.msg-count {
+  font-size: 10px;
+  color: var(--text-3);
+  margin-left: 4px;
+}
+</style>
