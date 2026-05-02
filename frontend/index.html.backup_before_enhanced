@@ -1,0 +1,3674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hi-Tech AI · Sales Org</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* =========================================================
+     APPLE SYSTEM DESIGN TOKENS
+     ========================================================= */
+  :root {
+    --bg: #F5F5F7;
+    --bg-2: #FAFAFC;
+    --surface: #FFFFFF;
+    --surface-2: #FBFBFD;
+    --separator: #E5E5EA;
+    --separator-2: #D1D1D6;
+
+    --text: #1D1D1F;
+    --text-2: #6E6E73;
+    --text-3: #86868B;
+    --text-4: #AEAEB2;
+
+    --blue: #007AFF;
+    --blue-soft: #E5F1FF;
+    --blue-tint: rgba(0, 122, 255, 0.08);
+    --orange: #FF9500;
+    --orange-soft: #FFF1DC;
+    --orange-tint: rgba(255, 149, 0, 0.10);
+    --red: #FF3B30;
+    --red-soft: #FFE5E3;
+    --red-tint: rgba(255, 59, 48, 0.08);
+    --green: #34C759;
+    --green-soft: #DEF7E2;
+    --green-tint: rgba(52, 199, 89, 0.10);
+    --purple: #AF52DE;
+    --purple-soft: #F2E2FA;
+    --teal: #5AC8FA;
+    --teal-soft: #DCF2FB;
+    --indigo: #5856D6;
+    --indigo-soft: #E1E1F8;
+    --yellow: #FFCC00;
+    --pink: #FF2D55;
+
+    --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-md: 0 2px 4px rgba(0,0,0,0.04), 0 6px 16px rgba(0,0,0,0.08);
+    --shadow-lg: 0 4px 12px rgba(0,0,0,0.06), 0 16px 40px rgba(0,0,0,0.10);
+
+    --radius-xs: 6px;
+    --radius-sm: 9px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 22px;
+    --radius-2xl: 28px;
+
+    --font: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    --font-mono: 'JetBrains Mono', "SF Mono", monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    height: 100vh;
+    overflow: hidden;
+    letter-spacing: -0.005em;
+  }
+
+  ::selection { background: var(--blue-soft); color: var(--blue); }
+
+  .app {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    height: 100vh;
+  }
+
+  /* =========================================================
+     TOP BAR — Apple-style with backdrop blur
+     ========================================================= */
+  .topbar {
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border-bottom: 1px solid var(--separator);
+    padding: 11px 22px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    z-index: 100;
+    position: relative;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .ms-avatar {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--orange), #FF6B00);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 12px;
+    color: #fff; letter-spacing: -0.02em;
+    box-shadow: 0 2px 8px rgba(255, 149, 0, 0.35);
+    flex-shrink: 0;
+  }
+  .ms-text { display: flex; flex-direction: column; min-width: 0; }
+  .ms-name {
+    font-size: 14.5px; font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.012em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .ms-sub {
+    font-size: 11.5px; color: var(--text-3);
+    display: flex; align-items: center; gap: 5px;
+    white-space: nowrap;
+  }
+  .live-dot {
+    width: 6px; height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  /* Apple segmented control */
+  .segmented {
+    display: flex;
+    background: rgba(120, 120, 128, 0.12);
+    border-radius: 9px;
+    padding: 2px;
+  }
+  .seg-btn {
+    border: 0; background: transparent;
+    color: var(--text-2);
+    padding: 6px 14px;
+    font-size: 13px; font-weight: 500;
+    font-family: var(--font);
+    border-radius: 7px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex; align-items: center; gap: 6px;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+  .seg-btn:hover { color: var(--text); }
+  .seg-btn.active {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 0.5px 0 rgba(0,0,0,0.04);
+    font-weight: 600;
+  }
+  .seg-badge {
+    background: var(--red);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 8px;
+    min-width: 16px;
+    text-align: center;
+    font-family: var(--font-mono);
+    letter-spacing: 0;
+  }
+
+  .topbar-right { display: flex; align-items: center; gap: 6px; }
+
+  /* =========================================================
+     BUTTONS
+     ========================================================= */
+  .btn {
+    border: 0; cursor: pointer;
+    font-family: var(--font);
+    font-size: 13px; font-weight: 500;
+    padding: 8px 14px;
+    border-radius: 8px;
+    transition: all 0.18s ease;
+    display: inline-flex; align-items: center; gap: 6px;
+    text-decoration: none; white-space: nowrap;
+    justify-content: center;
+    letter-spacing: -0.01em;
+  }
+  .btn-primary {
+    background: var(--blue); color: #fff;
+    font-weight: 600;
+  }
+  .btn-primary:hover { background: #0066D4; }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-orange {
+    background: var(--orange); color: #fff;
+    font-weight: 600;
+  }
+  .btn-orange:hover { background: #E68500; }
+  .btn-secondary {
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--separator-2);
+  }
+  .btn-secondary:hover { background: var(--surface-2); border-color: var(--text-3); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-2);
+  }
+  .btn-ghost:hover { background: var(--bg); color: var(--text); }
+  .btn-tinted {
+    background: var(--blue-tint);
+    color: var(--blue);
+    font-weight: 600;
+  }
+  .btn-tinted:hover { background: var(--blue-soft); }
+  .btn-tinted-orange {
+    background: var(--orange-tint);
+    color: var(--orange);
+    font-weight: 600;
+  }
+  .btn-tinted-orange:hover { background: var(--orange-soft); }
+  .btn-tinted-red {
+    background: var(--red-tint);
+    color: var(--red);
+    font-weight: 600;
+  }
+  .btn-tinted-red:hover { background: var(--red-soft); }
+  .btn-tinted-green {
+    background: var(--green-tint);
+    color: var(--green);
+    font-weight: 600;
+  }
+  .btn-tinted-green:hover { background: var(--green-soft); }
+  .btn-sm { font-size: 12px; padding: 6px 10px; }
+
+  /* =========================================================
+     VIEW CONTAINERS
+     ========================================================= */
+  .view { display: none; height: 100%; overflow-y: auto; overflow-x: hidden; }
+  .view.active { display: block; }
+  .view::-webkit-scrollbar { width: 8px; }
+  .view::-webkit-scrollbar-track { background: transparent; }
+  .view::-webkit-scrollbar-thumb { background: var(--separator-2); border-radius: 4px; }
+  .view::-webkit-scrollbar-thumb:hover { background: var(--text-4); }
+
+  /* =========================================================
+     DASHBOARD VIEW
+     ========================================================= */
+  .dash-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 28px 24px 80px;
+  }
+
+  .greeting {
+    margin-bottom: 24px;
+  }
+  .greeting h1 {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+    margin-bottom: 4px;
+  }
+  .greeting .sub {
+    font-size: 15px;
+    color: var(--text-2);
+    letter-spacing: -0.01em;
+  }
+  .greeting .sub strong { color: var(--text); font-weight: 600; }
+
+  /* KPI grid */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 32px;
+  }
+  .kpi-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .kpi-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+  }
+  .kpi-head {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .kpi-icon {
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; font-weight: 600;
+  }
+  .kpi-icon.blue { background: var(--blue-soft); color: var(--blue); }
+  .kpi-icon.red { background: var(--red-soft); color: var(--red); }
+  .kpi-icon.orange { background: var(--orange-soft); color: var(--orange); }
+  .kpi-icon.green { background: var(--green-soft); color: var(--green); }
+  .kpi-icon.purple { background: var(--purple-soft); color: var(--purple); }
+  .kpi-icon.indigo { background: var(--indigo-soft); color: var(--indigo); }
+
+  .kpi-trend {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-3);
+    letter-spacing: -0.02em;
+  }
+  .kpi-value {
+    font-size: 30px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1;
+  }
+  .kpi-label {
+    font-size: 12.5px;
+    color: var(--text-2);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+  }
+
+  /* Section header */
+  .sec-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 14px;
+    padding: 0 4px;
+  }
+  .sec-title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .sec-action {
+    font-size: 13px;
+    color: var(--blue);
+    font-weight: 500;
+    cursor: pointer;
+    background: none; border: 0;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+  .sec-action:hover { background: var(--blue-tint); }
+
+  .section { margin-bottom: 32px; }
+
+  /* =========================================================
+     LIVE REEL
+     ========================================================= */
+  .reel-wrapper { position: relative; }
+  .reel-live {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--red);
+    color: #fff;
+    font-size: 9.5px; font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-left: 10px;
+    vertical-align: 2px;
+  }
+  .reel-live::before {
+    content: ''; width: 6px; height: 6px;
+    background: #fff; border-radius: 50%;
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+
+  .reel {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 4px 24px 14px 24px;
+    margin: 0 -24px;
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: 24px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .reel::-webkit-scrollbar { height: 0; display: none; }
+
+  .reel-card {
+    flex: 0 0 290px;
+    scroll-snap-align: start;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 16px;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 180px;
+    position: relative;
+    overflow: hidden;
+  }
+  .reel-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+  }
+  .reel-card.fresh::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--green), var(--blue));
+    animation: fresh-bar 3s ease-in-out infinite;
+  }
+  @keyframes fresh-bar {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .reel-head {
+    display: flex; align-items: center; gap: 9px;
+  }
+  .reel-avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .reel-rep {
+    flex: 1; min-width: 0;
+  }
+  .reel-rep-name {
+    font-size: 13px; font-weight: 600;
+    letter-spacing: -0.01em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .reel-rep-meta {
+    font-size: 11px; color: var(--text-3);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .reel-time {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-3);
+    flex-shrink: 0;
+    letter-spacing: -0.02em;
+  }
+  .reel-customer {
+    font-size: 12.5px;
+    color: var(--text);
+    font-weight: 500;
+    line-height: 1.35;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .reel-msg {
+    font-size: 12.5px;
+    color: var(--text-2);
+    line-height: 1.4;
+    background: var(--bg-2);
+    border-radius: 10px;
+    padding: 9px 11px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    flex: 1;
+  }
+  .reel-msg .who {
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-right: 5px;
+  }
+  .reel-msg .who.mukul { color: var(--orange); }
+  .reel-msg .who.rep { color: var(--blue); }
+
+  .reel-foot {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  /* =========================================================
+     HANDLER PILLS
+     ========================================================= */
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 10.5px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 12px;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+  }
+  .pill .dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .pill.ai { background: var(--green-soft); color: #1F8C3D; }
+  .pill.escalated { background: var(--red-soft); color: #C92E27; }
+  .pill.approval { background: var(--orange-soft); color: #C77600; }
+  .pill.mukul { background: var(--purple-soft); color: #7B33B0; }
+  .pill.senior { background: var(--indigo-soft); color: #3937A8; }
+
+  .pill.urgency-high { background: var(--red-soft); color: #C92E27; }
+  .pill.urgency-medium { background: var(--orange-soft); color: #C77600; }
+  .pill.urgency-low { background: var(--green-soft); color: #1F8C3D; }
+
+  /* =========================================================
+     ACTION CARDS (Escalations / Approvals / Senior / Yours)
+     ========================================================= */
+  .action-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 18px 20px;
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 12px;
+    transition: box-shadow 0.15s ease;
+  }
+  .action-card:hover { box-shadow: var(--shadow-md); }
+
+  .action-card.escalated {
+    border-left: 3px solid var(--red);
+  }
+  .action-card.approval {
+    border-left: 3px solid var(--orange);
+  }
+  .action-card.senior {
+    border-left: 3px solid var(--indigo);
+  }
+  .action-card.mukul {
+    border-left: 3px solid var(--purple);
+  }
+
+  .ac-head {
+    display: flex; gap: 12px; align-items: flex-start;
+    margin-bottom: 10px;
+  }
+  .ac-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12.5px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .ac-info { flex: 1; min-width: 0; }
+  .ac-rep {
+    font-size: 14.5px; font-weight: 600;
+    letter-spacing: -0.012em;
+    margin-bottom: 2px;
+  }
+  .ac-rep .arrow {
+    color: var(--text-4); margin: 0 7px;
+    font-weight: 400;
+  }
+  .ac-rep .cust {
+    font-weight: 500; color: var(--text-2);
+  }
+  .ac-meta {
+    font-size: 11.5px; color: var(--text-3);
+    letter-spacing: -0.01em;
+  }
+  .ac-pills {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .ac-reason {
+    background: var(--bg-2);
+    border-radius: 10px;
+    padding: 10px 13px;
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: var(--text);
+    margin: 10px 0;
+  }
+  .ac-reason .lbl {
+    display: block;
+    font-size: 10px; font-weight: 700;
+    color: var(--text-3);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+  }
+
+  .ac-context {
+    background: var(--bg-2);
+    border-radius: 10px;
+    padding: 10px 13px;
+    font-size: 12px;
+    color: var(--text-2);
+    margin: 10px 0;
+    line-height: 1.5;
+  }
+  .ac-context .turn {
+    padding: 5px 0;
+  }
+  .ac-context .turn + .turn {
+    border-top: 1px solid var(--separator);
+  }
+  .ac-context .who {
+    font-weight: 700;
+    margin-right: 5px;
+    font-size: 10.5px;
+    letter-spacing: 0.02em;
+  }
+  .ac-context .who.mukul { color: var(--orange); }
+  .ac-context .who.rep { color: var(--blue); }
+
+  .ac-actions {
+    display: flex; gap: 7px; flex-wrap: wrap;
+    padding-top: 4px;
+  }
+
+  .empty-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    text-align: center;
+    color: var(--text-3);
+    font-size: 13px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* Confidence */
+  .conf {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 10.5px;
+    color: var(--text-3);
+    font-family: var(--font-mono);
+    letter-spacing: -0.02em;
+  }
+  .conf-bar {
+    width: 50px; height: 4px;
+    background: var(--separator);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .conf-fill {
+    height: 100%;
+    transition: width 0.3s;
+  }
+  .conf-fill.high { background: var(--green); }
+  .conf-fill.med { background: var(--orange); }
+  .conf-fill.low { background: var(--red); }
+
+  /* AI Autonomous compact list */
+  .auto-list {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .auto-row {
+    display: grid;
+    grid-template-columns: 36px 1fr auto auto;
+    gap: 14px;
+    padding: 14px 18px;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .auto-row + .auto-row { border-top: 1px solid var(--separator); }
+  .auto-row:hover { background: var(--bg-2); }
+  .auto-row .info { min-width: 0; }
+  .auto-row .name {
+    font-size: 13px; font-weight: 600;
+    margin-bottom: 2px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .auto-row .obj {
+    font-size: 11.5px;
+    color: var(--text-3);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    letter-spacing: -0.01em;
+  }
+
+  /* Today's Brief summary */
+  .brief-card {
+    background: linear-gradient(135deg, #FFFFFF, #FAFAFC);
+    border-radius: var(--radius-lg);
+    padding: 22px 24px;
+    box-shadow: var(--shadow-sm);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .brief-item {
+    display: flex; flex-direction: column; gap: 4px;
+    border-left: 2px solid var(--blue);
+    padding-left: 14px;
+  }
+  .brief-item.b2 { border-left-color: var(--green); }
+  .brief-item.b3 { border-left-color: var(--orange); }
+  .brief-num {
+    font-size: 24px; font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1;
+  }
+  .brief-label {
+    font-size: 11.5px; font-weight: 600;
+    color: var(--text-2);
+    letter-spacing: -0.01em;
+  }
+  .brief-detail {
+    font-size: 11.5px; color: var(--text-3);
+  }
+
+  /* =========================================================
+     INBOX VIEW
+     ========================================================= */
+  .inbox-view.active { display: grid; grid-template-columns: 360px 1fr; }
+
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--separator);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .sidebar-head {
+    padding: 14px 18px 12px;
+    border-bottom: 1px solid var(--separator);
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .sidebar-title {
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .sidebar-title .h {
+    font-size: 17px; font-weight: 700; letter-spacing: -0.02em;
+  }
+  .sidebar-title .count {
+    font-size: 11px; color: var(--text-3);
+    font-family: var(--font-mono); letter-spacing: -0.02em;
+  }
+
+  .filter-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+  .chip {
+    font-size: 11px; font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: var(--bg);
+    color: var(--text-2);
+    border: 0; cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: -0.01em;
+    font-family: var(--font);
+  }
+  .chip:hover { background: var(--separator); color: var(--text); }
+  .chip.active {
+    background: var(--text);
+    color: var(--surface);
+    font-weight: 600;
+  }
+
+  .conv-list { flex: 1; overflow-y: auto; }
+  .conv-list::-webkit-scrollbar { width: 6px; }
+  .conv-list::-webkit-scrollbar-track { background: transparent; }
+  .conv-list::-webkit-scrollbar-thumb { background: var(--separator-2); border-radius: 3px; }
+
+  .conv-item {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--separator);
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    gap: 11px;
+    align-items: start;
+    transition: background 0.12s;
+    position: relative;
+  }
+  .conv-item:hover { background: var(--bg-2); }
+  .conv-item.active { background: var(--blue-soft); }
+  .conv-item.active::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px; background: var(--blue);
+  }
+
+  .rep-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+    margin-top: 1px;
+  }
+  .conv-info { min-width: 0; }
+  .conv-line1 {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 8px; margin-bottom: 1px;
+  }
+  .conv-rep-name {
+    font-weight: 600; font-size: 13.5px;
+    letter-spacing: -0.012em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .conv-time {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--text-3); flex-shrink: 0;
+    letter-spacing: -0.02em;
+  }
+  .conv-customer {
+    font-size: 11.5px; color: var(--text-2);
+    margin-bottom: 3px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    letter-spacing: -0.01em;
+  }
+  .conv-preview {
+    font-size: 12px; color: var(--text-3);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    letter-spacing: -0.005em;
+  }
+  .conv-preview.unread { color: var(--text); font-weight: 500; }
+  .conv-preview .by {
+    color: var(--orange); font-weight: 700;
+    font-size: 10.5px; margin-right: 4px;
+    letter-spacing: 0.02em;
+  }
+  .conv-badges {
+    display: flex; flex-direction: column;
+    align-items: flex-end; gap: 3px;
+  }
+
+  /* =========================================================
+     CHAT PANE — Apple Messages style
+     ========================================================= */
+  .chat-pane {
+    display: flex; flex-direction: column;
+    background: var(--surface-2);
+    overflow: hidden;
+  }
+  .chat-head {
+    padding: 10px 22px;
+    border-bottom: 1px solid var(--separator);
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 12px;
+    align-items: center;
+  }
+  .chat-rep-name {
+    font-size: 16px; font-weight: 700;
+    letter-spacing: -0.018em;
+  }
+  .chat-rep-meta {
+    font-size: 11.5px; color: var(--text-3);
+    letter-spacing: -0.01em;
+  }
+  .chat-rep-meta span { color: var(--text-2); }
+
+  .handler-bar {
+    padding: 10px 22px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid var(--separator);
+  }
+  .handler-bar.ai { background: var(--green-tint); }
+  .handler-bar.escalated { background: var(--red-tint); }
+  .handler-bar.approval { background: var(--orange-tint); }
+  .handler-bar.senior { background: rgba(88, 86, 214, 0.07); }
+  .handler-bar.mukul { background: rgba(175, 82, 222, 0.07); }
+  .handler-info {
+    display: flex; align-items: center; gap: 10px;
+    flex: 1; min-width: 0;
+  }
+  .handler-info .text {
+    font-size: 12.5px;
+    color: var(--text-2);
+    letter-spacing: -0.01em;
+    line-height: 1.4;
+  }
+  .handler-info .text strong { color: var(--text); font-weight: 600; }
+  .handler-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+  .strategy-strip {
+    padding: 10px 22px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--separator);
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 22px;
+  }
+  .strat-cell {
+    display: flex; flex-direction: column; gap: 2px; min-width: 0;
+  }
+  .strat-label {
+    font-size: 9.5px; font-weight: 700;
+    color: var(--text-3);
+    letter-spacing: 0.06em; text-transform: uppercase;
+  }
+  .strat-val {
+    font-size: 12px;
+    color: var(--text);
+    letter-spacing: -0.01em;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .strat-val.objective { color: var(--blue); font-weight: 600; }
+
+  .messages {
+    flex: 1; overflow-y: auto;
+    padding: 20px 22px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .messages::-webkit-scrollbar { width: 6px; }
+  .messages::-webkit-scrollbar-track { background: transparent; }
+  .messages::-webkit-scrollbar-thumb { background: var(--separator-2); border-radius: 3px; }
+
+  .day-divider {
+    align-self: center;
+    font-size: 10.5px; font-weight: 600;
+    color: var(--text-3);
+    padding: 4px 12px;
+    background: var(--bg);
+    border-radius: 10px;
+    margin: 8px 0;
+    letter-spacing: -0.01em;
+  }
+
+  .msg {
+    max-width: 70%;
+    padding: 8px 13px 7px;
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.4;
+    position: relative;
+    display: flex; flex-direction: column; gap: 3px;
+    word-wrap: break-word;
+    letter-spacing: -0.005em;
+  }
+  .msg.mukul {
+    align-self: flex-end;
+    background: var(--blue);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .msg.mukul .msg-from { color: rgba(255,255,255,0.85); }
+  .msg.mukul .msg-foot { color: rgba(255,255,255,0.7); }
+  .msg.rep {
+    align-self: flex-start;
+    background: var(--surface);
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+    box-shadow: var(--shadow-xs);
+  }
+
+  .msg.draft {
+    opacity: 0.85;
+    border: 2px dashed rgba(255,255,255,0.5);
+  }
+  .msg.draft.approval {
+    background: var(--orange);
+    border-color: rgba(255,255,255,0.6);
+  }
+
+  .msg-from {
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    margin-bottom: 1px;
+  }
+  .msg.rep .msg-from { color: var(--text-3); }
+  .msg-real {
+    margin-left: 4px; color: var(--yellow);
+    background: rgba(255,255,255,0.15);
+    padding: 0 4px; border-radius: 3px;
+    font-size: 9px;
+  }
+  .msg.rep .msg-real { background: var(--orange-soft); color: var(--orange); }
+  .msg-body { white-space: pre-wrap; }
+  .msg-foot {
+    display: flex; justify-content: flex-end; align-items: center; gap: 4px;
+    font-size: 10px; color: var(--text-3);
+    margin-top: 2px;
+    font-family: var(--font-mono);
+    letter-spacing: -0.02em;
+  }
+  .msg-actions {
+    display: flex; gap: 5px; margin-top: 6px; flex-wrap: wrap;
+  }
+  .msg-actions a, .msg-actions button {
+    font-size: 11px; font-weight: 500;
+    padding: 4px 9px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.20);
+    color: rgba(255,255,255,0.95);
+    border: 0; cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+    letter-spacing: -0.01em;
+    font-family: var(--font);
+  }
+  .msg-actions a:hover, .msg-actions button:hover {
+    background: rgba(255,255,255,0.32);
+  }
+
+  /* Chat empty state */
+  .chat-empty {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 14px;
+    padding: 40px; text-align: center;
+    color: var(--text-3);
+  }
+  .chat-empty .icon {
+    font-size: 56px;
+    opacity: 0.3;
+  }
+  .chat-empty h2 {
+    font-size: 22px; font-weight: 600;
+    color: var(--text-2); letter-spacing: -0.02em;
+  }
+  .chat-empty p {
+    font-size: 13px; max-width: 360px;
+    line-height: 1.55; letter-spacing: -0.01em;
+  }
+
+  /* Composer */
+  .composer {
+    border-top: 1px solid var(--separator);
+    background: var(--surface);
+    padding: 12px 22px 16px;
+  }
+  .composer-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px; align-items: stretch;
+  }
+  .composer-input {
+    background: var(--bg);
+    border: 1px solid var(--separator);
+    color: var(--text);
+    padding: 10px 13px;
+    border-radius: 10px;
+    font-family: var(--font);
+    font-size: 13.5px;
+    line-height: 1.5;
+    resize: none;
+    min-height: 42px; max-height: 120px;
+    letter-spacing: -0.005em;
+  }
+  .composer-input:focus { outline: none; border-color: var(--blue); background: var(--surface); }
+  .composer-input::placeholder { color: var(--text-3); }
+  .composer-buttons { display: flex; flex-direction: column; gap: 6px; }
+  .composer-hints {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 7px;
+    font-size: 11px; color: var(--text-3);
+    letter-spacing: -0.01em;
+  }
+
+  .loader {
+    display: inline-block;
+    width: 11px; height: 11px;
+    border: 1.5px solid currentColor;
+    border-bottom-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* =========================================================
+     SETTINGS VIEW
+     ========================================================= */
+  .settings-container {
+    max-width: 900px; margin: 0 auto;
+    padding: 28px 24px 80px;
+  }
+  .settings-header { margin-bottom: 28px; }
+  .settings-header h1 {
+    font-size: 30px; font-weight: 700;
+    letter-spacing: -0.025em;
+    margin-bottom: 6px;
+  }
+  .settings-header p {
+    font-size: 14px; color: var(--text-2);
+    letter-spacing: -0.01em;
+    max-width: 600px; line-height: 1.55;
+  }
+
+  .settings-group {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .settings-group-head {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--separator);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .sg-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .sg-info { flex: 1; min-width: 0; }
+  .sg-title {
+    font-size: 15px; font-weight: 600;
+    letter-spacing: -0.015em;
+    margin-bottom: 1px;
+  }
+  .sg-desc {
+    font-size: 11.5px; color: var(--text-3);
+    letter-spacing: -0.01em;
+  }
+  .sg-status {
+    font-size: 11px; font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 11px;
+    letter-spacing: -0.01em;
+  }
+  .sg-status.connected { background: var(--green-soft); color: #1F8C3D; }
+  .sg-status.disconnected { background: var(--bg); color: var(--text-3); }
+  .sg-status.error { background: var(--red-soft); color: #C92E27; }
+
+  .settings-fields {
+    padding: 16px 20px;
+    display: flex; flex-direction: column; gap: 12px;
+  }
+  .field-row {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 14px;
+    align-items: center;
+  }
+  .field-label {
+    font-size: 13px; font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .field-label .req { color: var(--red); margin-left: 2px; }
+  .field-input {
+    background: var(--bg);
+    border: 1px solid var(--separator);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-family: var(--font);
+    font-size: 13px;
+    width: 100%;
+    letter-spacing: -0.005em;
+  }
+  .field-input:focus { outline: none; border-color: var(--blue); background: var(--surface); }
+  .field-input::placeholder { color: var(--text-4); }
+  .field-input.mono { font-family: var(--font-mono); font-size: 12.5px; letter-spacing: -0.02em; }
+  
+  .field-value {
+    padding: 10px 13px;
+    background: var(--bg-2);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--text);
+    letter-spacing: -0.005em;
+  }
+  .field-value.mono { font-family: var(--font-mono); font-size: 12.5px; }
+
+  .settings-actions {
+    padding: 14px 20px;
+    border-top: 1px solid var(--separator);
+    background: var(--bg-2);
+    display: flex; justify-content: flex-end; gap: 8px;
+  }
+
+  .senior-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 20px;
+  }
+  .senior-card {
+    background: var(--bg-2);
+    border: 1px solid var(--separator);
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+    transition: all 0.15s;
+  }
+  .senior-card:hover { border-color: var(--separator-2); }
+  .senior-card.active {
+    background: var(--blue-tint);
+    border-color: var(--blue);
+  }
+  .senior-info { flex: 1; min-width: 0; }
+  .senior-name {
+    font-size: 13.5px; font-weight: 600;
+    letter-spacing: -0.012em;
+    margin-bottom: 1px;
+  }
+  .senior-role {
+    font-size: 11.5px; color: var(--text-3);
+    letter-spacing: -0.01em;
+  }
+  .senior-toggle {
+    width: 38px; height: 22px;
+    background: var(--separator-2);
+    border-radius: 11px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .senior-toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 18px; height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    transition: transform 0.2s;
+  }
+  .senior-toggle.on {
+    background: var(--green);
+  }
+  .senior-toggle.on::after {
+    transform: translateX(16px);
+  }
+
+  /* MODAL */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.18s ease;
+  }
+  .modal-backdrop.show { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 540px;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: slideUp 0.22s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(16px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .modal::-webkit-scrollbar { width: 6px; }
+  .modal::-webkit-scrollbar-track { background: transparent; }
+  .modal::-webkit-scrollbar-thumb { background: var(--separator-2); border-radius: 3px; }
+
+  .modal-head {
+    padding: 20px 24px 14px;
+    border-bottom: 1px solid var(--separator);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .modal-title {
+    font-size: 18px; font-weight: 700;
+    letter-spacing: -0.018em;
+  }
+  .modal-close {
+    background: var(--bg);
+    border: 0; border-radius: 50%;
+    width: 28px; height: 28px;
+    cursor: pointer;
+    color: var(--text-2);
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-close:hover { background: var(--separator); color: var(--text); }
+
+  .modal-body {
+    padding: 18px 24px;
+    display: flex; flex-direction: column;
+    gap: 14px;
+  }
+  .modal-foot {
+    padding: 14px 24px;
+    border-top: 1px solid var(--separator);
+    display: flex; justify-content: flex-end; gap: 8px;
+    background: var(--bg-2);
+    border-bottom-left-radius: var(--radius-xl);
+    border-bottom-right-radius: var(--radius-xl);
+  }
+
+  .color-picker {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .color-dot {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .color-dot:hover { transform: scale(1.1); }
+  .color-dot.active {
+    border-color: var(--text);
+    transform: scale(1.1);
+  }
+
+  /* Senior thread panel */
+  .senior-thread-panel {
+    background: linear-gradient(135deg, rgba(88, 86, 214, 0.04), rgba(175, 82, 222, 0.04));
+    border-top: 1px solid var(--separator);
+    padding: 16px 22px;
+  }
+  .stp-head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 12px;
+  }
+  .stp-title {
+    font-size: 13px; font-weight: 600;
+    color: var(--indigo);
+    letter-spacing: -0.01em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .stp-title .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .stp-msgs {
+    display: flex; flex-direction: column; gap: 6px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .stp-msgs::-webkit-scrollbar { width: 4px; }
+  .stp-msgs::-webkit-scrollbar-thumb { background: var(--separator-2); border-radius: 2px; }
+
+  .stp-msg {
+    max-width: 80%;
+    padding: 8px 12px;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.4;
+    letter-spacing: -0.005em;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .stp-msg.ai_to_senior {
+    align-self: flex-start;
+    background: var(--indigo);
+    color: #fff;
+    border-bottom-left-radius: 4px;
+  }
+  .stp-msg.senior {
+    align-self: flex-end;
+    background: var(--surface);
+    border: 1px solid var(--separator);
+    border-bottom-right-radius: 4px;
+  }
+  .stp-msg .from {
+    font-size: 9.5px; font-weight: 700;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    margin-bottom: 1px;
+    opacity: 0.85;
+  }
+  .stp-msg.senior .from { color: var(--indigo); }
+  .stp-msg .body { white-space: pre-wrap; }
+  .stp-msg .time {
+    font-size: 9.5px; opacity: 0.7;
+    text-align: right; margin-top: 2px;
+    font-family: var(--font-mono);
+  }
+  .stp-msg .actions {
+    display: flex; gap: 5px; margin-top: 5px; flex-wrap: wrap;
+  }
+  .stp-msg .actions a, .stp-msg .actions button {
+    font-size: 10.5px; font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 5px;
+    background: rgba(255,255,255,0.22);
+    color: rgba(255,255,255,0.95);
+    border: 0; cursor: pointer;
+    text-decoration: none;
+    font-family: var(--font);
+  }
+  .stp-msg .actions a:hover, .stp-msg .actions button:hover { background: rgba(255,255,255,0.34); }
+
+  .stp-empty {
+    padding: 14px;
+    text-align: center;
+    color: var(--text-3);
+    font-size: 12px;
+    font-style: italic;
+  }
+
+  .stp-composer {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .stp-input {
+    background: var(--surface);
+    border: 1px solid var(--separator);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-family: var(--font);
+    font-size: 12.5px;
+    line-height: 1.5;
+    resize: none;
+    min-height: 38px; max-height: 100px;
+  }
+  .stp-input:focus { outline: none; border-color: var(--indigo); }
+
+  /* TEAM LIST */
+  .team-list {
+    padding: 6px 0;
+  }
+  .team-row {
+    border-top: 1px solid var(--separator);
+  }
+  .team-row:first-child { border-top: 0; }
+  .team-row-head {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    gap: 12px;
+    padding: 12px 20px;
+    align-items: center;
+  }
+  .team-row-info { min-width: 0; }
+  .team-row-name {
+    font-size: 14px; font-weight: 600;
+    letter-spacing: -0.012em;
+    margin-bottom: 1px;
+  }
+  .team-row-meta {
+    font-size: 11.5px; color: var(--text-3);
+    letter-spacing: -0.01em;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .team-row-pills {
+    display: flex; gap: 5px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .team-row-body {
+    background: var(--bg-2);
+    border-top: 1px solid var(--separator);
+    padding: 16px 20px;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  /* Segmented options for intensity / language */
+  .seg-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .seg-opt {
+    background: var(--surface);
+    border: 1px solid var(--separator);
+    color: var(--text-2);
+    padding: 10px 12px;
+    border-radius: 9px;
+    font-family: var(--font);
+    font-size: 13px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .seg-opt:hover {
+    border-color: var(--separator-2);
+    color: var(--text);
+  }
+  .seg-opt.active {
+    background: var(--blue-tint);
+    border-color: var(--blue);
+    color: var(--blue);
+  }
+  .seg-opt.active span:first-child { color: var(--blue) !important; }
+  @media (max-width: 760px) {
+    .seg-options { grid-template-columns: 1fr; }
+    .team-row-head { grid-template-columns: auto 1fr; gap: 10px; }
+    .team-row-pills { grid-column: 1 / -1; justify-content: flex-start; }
+    .team-row-head .btn-ghost { grid-column: 2; justify-self: flex-end; }
+  }
+
+  /* =========================================================
+     RESPONSIVE
+     ========================================================= */
+  @media (max-width: 980px) {
+    .kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .brief-card { grid-template-columns: 1fr; gap: 14px; }
+    .strategy-strip { grid-template-columns: 1fr; gap: 8px; padding: 10px 16px; }
+    .field-row { grid-template-columns: 1fr; gap: 4px; }
+    .senior-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 760px) {
+    .topbar { padding: 9px 14px; flex-wrap: wrap; }
+    .segmented { order: 3; width: 100%; overflow-x: auto; }
+    .seg-btn { flex-shrink: 0; }
+    .dash-container, .settings-container { padding: 22px 16px 60px; }
+    .greeting h1 { font-size: 26px; }
+    .inbox-view.active { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .sidebar.show { display: flex; }
+    .chat-head, .messages, .composer, .handler-bar { padding-left: 16px; padding-right: 16px; }
+    .reel { padding: 4px 16px 14px 16px; margin: 0 -16px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="ms-avatar">MS</div>
+      <div class="ms-text">
+        <div class="ms-name">Mukul Sareen</div>
+        <div class="ms-sub"><span class="live-dot"></span> AI Sales Org · Live</div>
+      </div>
+    </div>
+    <nav class="segmented" id="tabs">
+      <button class="seg-btn active" data-tab="dash" onclick="setTab('dash')">Dashboard</button>
+      <button class="seg-btn" data-tab="inbox" onclick="setTab('inbox')">Inbox</button>
+      <button class="seg-btn" data-tab="cc" onclick="setTab('cc')">
+        Command Centre
+        <span class="seg-badge" id="ccBadge">0</span>
+      </button>
+      <button class="seg-btn" data-tab="settings" onclick="setTab('settings')">Settings</button>
+    </nav>
+    <div class="topbar-right">
+      <button class="btn btn-ghost btn-sm" onclick="resetData()">Reset</button>
+    </div>
+  </header>
+
+  <!-- DASHBOARD -->
+  <main class="view active" id="viewDash">
+    <div class="dash-container" id="dashContainer"></div>
+  </main>
+
+  <!-- INBOX -->
+  <main class="view inbox-view" id="viewInbox">
+    <aside class="sidebar">
+      <div class="sidebar-head">
+        <div class="sidebar-title">
+          <span class="h">Conversations</span>
+          <span class="count" id="sideCount">0 active</span>
+        </div>
+        <div class="filter-chips" id="filterChips">
+          <button class="chip active" data-filter="all" onclick="setFilter('all')">All</button>
+          <button class="chip" data-filter="ai" onclick="setFilter('ai')">AI</button>
+          <button class="chip" data-filter="escalated" onclick="setFilter('escalated')">Escalated</button>
+          <button class="chip" data-filter="senior" onclick="setFilter('senior')">Senior</button>
+          <button class="chip" data-filter="approval" onclick="setFilter('approval')">Approve</button>
+          <button class="chip" data-filter="mukul" onclick="setFilter('mukul')">Yours</button>
+        </div>
+      </div>
+      <div class="conv-list" id="convList"></div>
+    </aside>
+    <section class="chat-pane" id="chatPane"></section>
+  </main>
+
+  <!-- COMMAND CENTRE -->
+  <main class="view" id="viewCC">
+    <div class="dash-container" id="ccContainer"></div>
+  </main>
+
+  <!-- SETTINGS -->
+  <main class="view" id="viewSettings">
+    <div class="settings-container" id="settingsContainer"></div>
+  </main>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="modalBackdrop" onclick="closeModalFromBackdrop(event)">
+  <div class="modal" id="modal" onclick="event.stopPropagation()"></div>
+</div>
+
+<script>
+  // ============================================================
+  // SENIOR LAYER PEOPLE (your buffer)
+  // ============================================================
+  const DEFAULT_SENIORS = {
+    anthony: { name: 'Anthony Joseph', role: 'Senior Sales Manager · West & South', phone: '919812346001', avatar: 'AJ', color: '#5856D6', region: 'West & South', language: 'english_only', enabled: true },
+    ardaman: { name: 'Ardaman Singh', role: 'Senior Sales Manager · North India', phone: '919812346002', avatar: 'AS', color: '#AF52DE', region: 'North India', language: 'hinglish_80', enabled: true }
+  };
+
+  const SENIORS = new Proxy({}, {
+    get(_, key) { return settings && settings.seniors ? settings.seniors[key] : undefined; },
+    has(_, key) { return settings && settings.seniors ? key in settings.seniors : false; },
+    ownKeys() { return settings && settings.seniors ? Object.keys(settings.seniors) : []; },
+    getOwnPropertyDescriptor(_, key) { return settings && settings.seniors && key in settings.seniors ? { enumerable: true, configurable: true, value: settings.seniors[key] } : undefined; }
+  });
+
+  // ============================================================
+  // REPS & CUSTOMERS
+  // intensity: 'high' (proactive nudge any signal) | 'standard' (default) | 'light' (only on rep reply or critical) | 'minimal' (rep-initiated only)
+  // language: 'hinglish_80' (80E/20H) | 'hinglish_60' (60E/40H) | 'english_light_hindi' (~95E with rare ji/achha) | 'english_only' (pure English)
+  // ============================================================
+  const DEFAULT_TEAM = {
+    r1: { name: 'Vishal Dhanraj Patil', emp_code: '1811', phone: '919812345001', region: 'Pune', avatar: 'VP', color: '#34C759', intensity: 'standard', language: 'hinglish_80', role: 'Sales Person', reports_to: 'anthony' },
+    r2: { name: 'Ravi Kumar Negi',      emp_code: '1752', phone: '919812345002', region: 'North India', avatar: 'RN', color: '#007AFF', intensity: 'high',     language: 'hinglish_80', role: 'Sales Person', reports_to: 'ardaman' },
+    r3: { name: 'Girish Bijutkar',       emp_code: '1797', phone: '919812345003', region: 'Maharashtra', avatar: 'GB', color: '#FF9500', intensity: 'standard', language: 'hinglish_60', role: 'Sales Person', reports_to: 'anthony' },
+    r4: { name: 'Pradeep Vishwakarma',   emp_code: '1593', phone: '919812345004', region: 'Mumbai/Gujarat', avatar: 'PV', color: '#AF52DE', intensity: 'high',     language: 'hinglish_80', role: 'Senior Sales Person', reports_to: 'anthony' },
+    r5: { name: 'Vikas Kamlakar',        emp_code: '1062', phone: '919812345006', region: 'Karnataka', avatar: 'VK', color: '#5AC8FA', intensity: 'light',    language: 'english_light_hindi', role: 'Sales Person', reports_to: 'anthony' },
+    r6: { name: 'D Daniel Raj',          emp_code: '1708', phone: '919812345005', region: 'Tamil Nadu', avatar: 'DR', color: '#FF3B30', intensity: 'standard', language: 'english_only', role: 'Sales Person', reports_to: 'anthony' }
+  };
+
+  // REPS is a getter into settings.team — kept name for compatibility with existing code paths
+  const REPS = new Proxy({}, {
+    get(_, key) { return settings && settings.team ? settings.team[key] : undefined; },
+    has(_, key) { return settings && settings.team ? key in settings.team : false; },
+    ownKeys() { return settings && settings.team ? Object.keys(settings.team) : []; },
+    getOwnPropertyDescriptor(_, key) { return settings && settings.team && key in settings.team ? { enumerable: true, configurable: true, value: settings.team[key] } : undefined; }
+  });
+
+  const INTENSITY_OPTIONS = {
+    high:     { label: 'High',     desc: 'Proactive — AI nudges on every signal',     color: '#FF3B30' },
+    standard: { label: 'Standard', desc: 'Default — nudge on important moments',      color: '#007AFF' },
+    light:    { label: 'Light',    desc: 'Only on rep replies or critical events',    color: '#FF9500' },
+    minimal:  { label: 'Minimal',  desc: 'Rep-initiated only — AI stays quiet',       color: '#86868B' }
+  };
+
+  const LANGUAGE_OPTIONS = {
+    hinglish_80:         { label: 'Hinglish · 80% English / 20% Hindi', short: '80E/20H', desc: 'English-led, light Hindi connectives' },
+    hinglish_60:         { label: 'Hinglish · 60% English / 40% Hindi', short: '60E/40H', desc: 'Balanced mix, more Hindi flow' },
+    english_light_hindi: { label: 'English · light Hindi accents',      short: 'EN+',     desc: '~95% English, occasional ji/achha' },
+    english_only:        { label: 'English only',                       short: 'EN',      desc: 'Pure professional English, no Hindi' }
+  };
+
+  const CUSTOMERS = {
+    cu1: { comp_code: '5989', name: 'Patil Engineering Works', city: 'Pune', state: 'Maharashtra',
+      type: 'regular', last_order_days: 22, products_bought: ['Rust-X 1338'], ltv: '₹14L/yr', cross_sell: ['Dr Bio dunnage', 'Tuffpaulin export'] },
+    cu2: { comp_code: '56772', name: 'Sharma Industries', city: 'Faridabad', state: 'Haryana',
+      type: 'new', last_order_days: null, products_bought: [], ltv: 'first deal', cross_sell: [] },
+    cu3: { comp_code: '55659', name: 'Asian Polytech', city: 'Delhi', state: 'Delhi',
+      type: 'at_risk', last_order_days: 65, products_bought: ['KIF sacks'], ltv: '₹8L/yr (declining)', cross_sell: [] },
+    cu4: { comp_code: '46698', name: 'Ravindra Plastics', city: 'Mumbai', state: 'Maharashtra',
+      type: 'new', last_order_days: null, products_bought: [], ltv: 'trial pending', cross_sell: ['Biopolymer pellets'] },
+    cu5: { comp_code: '53340', name: 'Coimbatore Footwear Ind', city: 'Coimbatore', state: 'Tamil Nadu',
+      type: 'new', last_order_days: null, products_bought: [], ltv: 'first contact', cross_sell: [] },
+    cu6: { comp_code: '10339', name: 'Belgaum Auto Components', city: 'Belgaum', state: 'Karnataka',
+      type: 'dormant', last_order_days: 92, products_bought: ['VCI 2D bags', 'Rust-X 1337'], ltv: '₹22L/yr historical', cross_sell: [] },
+    cu7: { comp_code: '40030', name: 'Mahindra Logistics Navi Mumbai', city: 'Navi Mumbai', state: 'Maharashtra',
+      type: 'regular', last_order_days: 18, products_bought: ['Tuffpaulin 250GSM', 'Tuffpaulin 300GSM'], ltv: '₹38L/yr', cross_sell: ['Dr Bio', 'EVA packaging'] }
+  };
+
+  // ============================================================
+  // SEED CONVERSATIONS
+  // ============================================================
+  const SEED_CONVERSATIONS = [
+    {
+      id: 'conv1', rep_id: 'r1', customer_id: 'cu1',
+      topic: 'VCI catalogue follow-up + Dr Bio cross-sell',
+      pipeline_stage: 'Active customer · cross-sell window',
+      objective: 'Get Dr Bio dunnage proposal sent today; confirm VCI catalogue dispatch',
+      tactic: 'Acknowledge regular customer, push parallel cross-sell',
+      urgency: 'medium',
+      handler: 'ai', handler_reason: null, senior_assigned: null,
+      ai_confidence: 88, fresh: true,
+      messages: [
+        { from: 'mukul', text: 'Vishal, yesterday\'s Patil Engg visit was 45 min — that\'s solid. Customer asked about VCI bag sizes and Dr Bio dunnage. Catalogue toh aaj bhej diya?', ts: '10:14', date: 'today', status: 'sent', read: true, by_ai: true },
+        { from: 'rep', text: 'Sir catalogue 11am ko bhej diya, customer ne acknowledge bhi kiya. Monday tak revert karenge bole hain.', ts: '11:32', date: 'today', status: 'received' },
+        { from: 'mukul', text: 'Achha. Now on Dr Bio dunnage — they\'re an existing customer, conversion will be fast. Aaj hi proposal bhejo, Monday tak wait mat karo. Run both deals in parallel. Confirm by EOD.', ts: '11:45', date: 'today', status: 'draft', read: false, by_ai: true }
+      ]
+    },
+    {
+      id: 'conv2', rep_id: 'r2', customer_id: 'cu3',
+      topic: 'Drive-by anomaly + 15% discount demand',
+      pipeline_stage: 'At-risk · pricing decision needed',
+      objective: 'Decision on 15% discount or alternative bundle',
+      tactic: 'Customer demanding 15% beyond 8% standard authority',
+      urgency: 'high',
+      handler: 'senior', handler_reason: 'Pricing 15% beyond rep authority. AI routed to Ardaman first — North region escalation. He has 24h to resolve before it bumps to you.',
+      senior_assigned: 'ardaman', ai_confidence: 42,
+      messages: [
+        { from: 'mukul', text: 'Ravi, this Asian Polytech visit — only 8 minutes? Comment says price discussion happened but 8 min mein toh proper meeting nahi hoti. What was the actual situation?', ts: '17:30', date: 'yesterday', status: 'sent', read: true, by_ai: true },
+        { from: 'rep', text: 'Sir actually customer busy tha, 10 min hi de paya. Said our KIF price is 12% high vs Asian Polymer, asked for 8% discount.', ts: '18:02', date: 'yesterday', status: 'received' },
+        { from: 'mukul', text: 'Theek hai. But this customer hasn\'t ordered in 65 days — at-risk hai. Don\'t go discount route. Set up a proper plant demo — KIF tensile strength dikhao with samples. Wednesday tak ho jaana chahiye.', ts: '09:12', date: 'today', status: 'sent', read: true, by_ai: true },
+        { from: 'rep', text: 'Sir today 4pm appointment confirmed, demo done with samples. But customer ne final position liya — wants 15% discount, otherwise switching to Asian Polymer permanently.', ts: '16:45', date: 'today', status: 'received' }
+      ],
+      senior_thread: [
+        { from: 'ai_to_senior', text: 'Ardaman, need your help on Asian Polytech Delhi situation — Ravi is running out of room.\n\nQuick context: at-risk North customer (65 days no order, ₹8L/yr declining). Today demanded 15% discount on KIF, threatening to switch to Asian Polymer permanently. That\'s 7% beyond Ravi\'s authority and beyond what I want to authorise on price war alone.\n\n--- FULL CONVERSATION WITH RAVI ---\n[17:30] Mukul: Ravi, this Asian Polytech visit — only 8 minutes? Comment says price discussion happened but 8 min mein toh proper meeting nahi hoti. What was the actual situation?\n\n[18:02] Ravi: Sir actually customer busy tha, 10 min hi de paya. Said our KIF price is 12% high vs Asian Polymer, asked for 8% discount.\n\n[09:12] Mukul: Theek hai. But this customer hasn\'t ordered in 65 days — at-risk hai. Don\'t go discount route. Set up a proper plant demo — KIF tensile strength dikhao with samples. Wednesday tak ho jaana chahiye.\n\n[16:45] Ravi: Sir today 4pm appointment confirmed, demo done with samples. But customer ne final position liya — wants 15% discount, otherwise switching to Asian Polymer permanently.\n--- END ---\n\nWhat I need from you:\n1. Speak to Ravi today — find out who at Asian Polytech is actually saying this (DM or just purchase asst)\n2. Decide: do we walk away from this account, or counter with bundle pricing (KIF + Rust-X 1338 cross-sell at 8% blended)?\n3. Revert to me within 24h with your recommendation. Don\'t authorise 15% straight — we set a precedent.\n\nUpdate me by tomorrow EOD.', ts: '17:08', date: 'today', status: 'sent', read: true },
+        { from: 'senior', text: 'Mukul, just spoke to Ravi. The 15% demand came from Mr. Bhatia, the actual purchase head — not just an asst. He said Asian Polymer is offering blanket 12% lower with longer credit days. I\'ve known Bhatia 5 years.\n\nMy recommendation: Don\'t match 15%. Counter with — current KIF rate held + 60 days credit (vs current 30) + free Rust-X 1337 trial bundle worth ₹40K. Total customer-perceived value matches their 15% ask without setting precedent.\n\nIf he doesn\'t bite, walk. I think this account is gone anyway. Need your green light on the credit extension.', ts: '17:35', date: 'today', status: 'received' }
+      ]
+    },
+    {
+      id: 'conv3', rep_id: 'r2', customer_id: 'cu2',
+      topic: 'Urgent Tuffpaulin order',
+      pipeline_stage: 'New customer · ready to PO',
+      objective: 'Lock proforma confirmation + flag CRM hygiene',
+      tactic: 'Push for closure today',
+      urgency: 'high',
+      handler: 'ai', handler_reason: null, senior_assigned: null,
+      ai_confidence: 82,
+      messages: [
+        { from: 'mukul', text: 'Ravi, Sharma Industries ka Tuffpaulin 250 GSM 40 pcs urgent — proforma raise hua aaj?', ts: '17:25', date: 'yesterday', status: 'sent', read: true, by_ai: true },
+        { from: 'rep', text: 'Sir Heena ma\'am ke through proforma raise kar diya. Customer ko EOD tak mil jayega.', ts: '17:48', date: 'yesterday', status: 'received' },
+        { from: 'mukul', text: 'Good. Kal subah Mr Sharma ko phone karo to confirm — these urgent orders fast band hote hain ya kabhi nahi. PO Wednesday tak chahiye, warna mujhe bolo, I\'ll escalate.', ts: '17:55', date: 'yesterday', status: 'sent', read: true, by_ai: true }
+      ]
+    },
+    {
+      id: 'conv4', rep_id: 'r4', customer_id: 'cu4',
+      topic: 'Dr Bio 5-ton trial · Approval Pending',
+      pipeline_stage: 'High-value trial conversion',
+      objective: 'Lock trial PO; AI prepared message awaiting your sign-off',
+      tactic: 'Message uses your name and pricing commitment — needs your OK',
+      urgency: 'high',
+      handler: 'approval', handler_reason: 'AI drafted reply that references your personal commitment to MOQ exception pricing. High-value trial (5T → 20T/mo potential) — wants your sign-off before send.',
+      senior_assigned: null, ai_confidence: 71, fresh: true,
+      messages: [
+        { from: 'mukul', text: 'Pradeep, Ravindra Plastics 5-ton trial deal hot hai. Owner ne next week decision bola hai. FSSAI docs and pricing approval ka kya status?', ts: '20:14', date: 'yesterday', status: 'sent', read: true, by_ai: true },
+        { from: 'rep', text: 'Sir FSSAI docs Friday tak mil jayenge, but pricing approval Heena ma\'am side stuck hai — finance team ne hold kiya hai because trial volume below normal MOQ.', ts: '08:30', date: 'today', status: 'received' },
+        { from: 'mukul', text: 'Pradeep, MOQ wala issue main personally Heena se baat karunga aaj. You focus on FSSAI side — make sure Friday tak hi mile, no slips. Trial pricing main approve kar dunga special case ke roop mein, but PO Monday tak chahiye warna deal ka leverage chala jaayega. Confirm karo by EOD.', ts: '09:15', date: 'today', status: 'draft', read: false, by_ai: true, requires_approval: true }
+      ]
+    },
+    {
+      id: 'conv5', rep_id: 'r3', customer_id: null,
+      topic: 'Nashik MIDC cluster — 4 KIF leads',
+      pipeline_stage: 'Lead generation · sample stage',
+      objective: 'Speed up Anthony\'s approval + lock sample dispatch',
+      tactic: 'Cluster opportunity — 12-15 ton/month combined volume',
+      urgency: 'medium',
+      handler: 'ai', handler_reason: null, senior_assigned: null,
+      ai_confidence: 85,
+      messages: [
+        { from: 'mukul', text: 'Girish, Nashik MIDC ka 4 KIF leads — combined 12-15 ton ka volume hai, that\'s big. List Anthony ko bheji?', ts: '09:32', date: 'today', status: 'sent', read: true, by_ai: true },
+        { from: 'rep', text: 'Sir kal evening list bheji thi, abhi tak approval nahi aaya. Reminder maaru kya?', ts: '10:05', date: 'today', status: 'received' }
+      ]
+    },
+    {
+      id: 'conv6', rep_id: 'r6', customer_id: 'cu5',
+      topic: 'EVA sample · competitive switch',
+      pipeline_stage: 'New customer · sample dispatch',
+      objective: 'Trigger samples for grade 30 + 45',
+      tactic: 'Sample-to-order conversion on competitor switch',
+      urgency: 'medium',
+      handler: 'ai', handler_reason: null, senior_assigned: null,
+      ai_confidence: 78, fresh: true,
+      messages: [
+        { from: 'mukul', text: 'Daniel, the Coimbatore Footwear samples for Mr. Gowtham — has dispatch been raised yet? This is a competitive switch deal, we need to move fast. Update me by EOD.', ts: '08:50', date: 'today', status: 'sent', read: false, by_ai: true }
+      ]
+    },
+    {
+      id: 'conv7', rep_id: 'r5', customer_id: 'cu6',
+      topic: 'DORMANT — Belgaum Auto · Operational Failure',
+      pipeline_stage: 'Win-back · operational complaint',
+      objective: 'Customer left over Hi-Tech delivery failures — needs you',
+      tactic: 'Customer cited 3 late dispatches from Manesar — beyond rep\'s scope',
+      urgency: 'high',
+      handler: 'escalated', handler_reason: 'Customer cited Hi-Tech operational issue (delayed dispatch + wrong sizes from Heena\'s team) as switch reason. ₹22L/yr historical account. Win-back needs YOUR direct acknowledgement.',
+      senior_assigned: null, ai_confidence: 38,
+      messages: [
+        { from: 'mukul', text: 'Vikas, Belgaum Auto Components — this customer hasn\'t ordered in 92 days, vs their normal 30-day cadence. ₹22L/yr account, likely competitor switch. Phone first, no visit yet. Find out the exact reason. Update me by 6pm.', ts: '11:08', date: 'yesterday', status: 'sent', read: true, by_ai: true },
+        { from: 'rep', text: 'Sir, I called Mr. Patil. He said in the last 6 months we had 3 late dispatches and once wrong size came. They got frustrated with Manesar plant delivery, so shifted to Cortec. He told me — "ab Hi-Tech pe trust nahi hai, sorry".', ts: '14:20', date: 'today', status: 'received' }
+      ]
+    },
+    {
+      id: 'conv8', rep_id: 'r4', customer_id: 'cu7',
+      topic: 'CROSS-SELL · Mahindra Logistics',
+      pipeline_stage: 'Active customer · strategic upsell',
+      objective: 'Position Dr Bio + EVA at CXO level',
+      tactic: 'Key ₹38L account — needs CEO-to-CEO ESG framing',
+      urgency: 'low',
+      handler: 'mukul', handler_reason: 'You took this over yesterday — strategic key-account upsell needs your direct ESG positioning. AI on advisory standby.',
+      senior_assigned: null, ai_confidence: 65,
+      messages: [
+        { from: 'mukul', text: 'Pradeep, Mahindra Logistics Navi Mumbai — yeh ₹38L/yr Tuffpaulin customer hai. Logistics company hai, ESG pressure hoga. Kabhi inse Dr Bio compostable ya EVA dunnage discuss kiya?', ts: '11:15', date: 'yesterday', status: 'sent', read: true, by_ai: true },
+        { from: 'rep', text: 'Sir kabhi formally pitch nahi ki Dr Bio ki — they buy regularly so unko bother nahi karta tha. Lekin point sahi hai, ESG angle work kar sakta hai. Next week meeting set karu?', ts: '15:20', date: 'yesterday', status: 'received' },
+        { from: 'mukul', text: 'Pradeep, main personally handle karunga is account ko. Tuesday afternoon meeting set karo, main aaunga along with you. Their procurement head Mr Iyer ko mujhe directly milna hai — ESG narrative aur 5-year framework I\'ll position myself. Tum slot lock karo.', ts: '15:42', date: 'yesterday', status: 'sent', read: true, by_ai: false, by_mukul_real: true }
+      ]
+    }
+  ];
+
+  // ============================================================
+  // SETTINGS / API CONFIG
+  // ============================================================
+  const DEFAULT_SETTINGS = {
+    team: JSON.parse(JSON.stringify(DEFAULT_TEAM)),
+    seniors: JSON.parse(JSON.stringify(DEFAULT_SENIORS)),
+    integrations: {
+      claude: { connected: true, api_key: 'sk-ant-***********...HQg9k', model: 'claude-sonnet-4-20250514' },
+      whatsapp: { connected: false, phone_id: '', access_token: '', verify_token: '' },
+      crm: { connected: false, endpoint: '', api_key: '' },
+      visit_app: { connected: false, endpoint: '', api_key: '' },
+      email: { connected: false, smtp_host: '', smtp_port: '587', smtp_user: '', smtp_pass: '' },
+      sms: { connected: false, gateway: 'twilio', sid: '', token: '' }
+    },
+    senior_layer: {
+      enabled: true,
+      escalation_window_hours: 24,
+      auto_route_north_to: 'ardaman',
+      auto_route_other_to: 'anthony'
+    },
+    escalation_rules: {
+      pricing_threshold_pct: 10,
+      key_account_ltv: 2000000,
+      ai_confidence_threshold: 70,
+      max_unresponsive_nudges: 3
+    }
+  };
+
+  let conversations = [];
+  let settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+  let activeFilter = 'all';
+  let activeConvId = null;
+  let activeTab = 'dash';
+
+  // ============================================================
+  // STORAGE
+  // ============================================================
+  // ============================================================
+  // STORAGE & API INTEGRATION
+  // ============================================================
+  async function loadData() {
+    try {
+      console.log("Loading data...");
+      // 1. Fetch Team (Reps)
+      const teamRes = await fetch('/api/settings/team');
+      if (teamRes.ok) {
+        const teamArr = await teamRes.json();
+        settings.team = {};
+        teamArr.forEach(r => { settings.team[r.id] = r; });
+      }
+
+      // 2. Fetch Seniors
+      const seniorsRes = await fetch('/api/settings/seniors');
+      if (seniorsRes.ok) {
+        const seniorsArr = await seniorsRes.json();
+        settings.seniors = {};
+        seniorsArr.forEach(s => { settings.seniors[s.id] = s; });
+      }
+
+      // 3. Fetch Conversations
+      const convsRes = await fetch('/api/conversations?limit=100');
+      if (convsRes.ok) {
+        const rawConvs = await convsRes.json();
+        conversations = rawConvs.map(c => ({
+          ...c,
+          senior_assigned: c.senior_assigned_id,
+          fresh: c.is_fresh,
+          messages: (c.messages || []).map(m => ({
+            ...m,
+            from: m.from_who,
+            date: m.date_label,
+            read: m.is_read
+          }))
+        }));
+        return;
+      }
+    } catch (e) {
+      console.error("Backend fetch failed, falling back to local seeds", e);
+    }
+
+    // Fallback to seeds if API is unavailable or fails
+    conversations = JSON.parse(JSON.stringify(SEED_CONVERSATIONS));
+    conversations.forEach(c => { if (!c.senior_thread) c.senior_thread = []; });
+    settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+  }
+
+  async function saveData() {
+    // In this integrated version, we primarily send actions to the server.
+    // Local state is updated and re-rendered immediately for snappy feel.
+    console.log("Local state updated. In a full implementation, this would sync specific changes to the DB.");
+  }
+
+  async function resetData() {
+    if (!confirm('Reset everything to demo state?')) return;
+    conversations = JSON.parse(JSON.stringify(SEED_CONVERSATIONS));
+    settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+    activeConvId = null;
+    await saveData();
+    render();
+  }
+
+  // ============================================================
+  // CLAUDE API — Mukul-voice nudge
+  // ============================================================
+  // AI GENERATION — Use backend API endpoints
+  // ============================================================
+  async function generateNudge(conv, advisoryOnly = false) {
+    // Use backend API endpoint instead of calling AI directly
+    const response = await fetch(`/api/conversations/${conv.id}/generate-nudge`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" }
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`API error ${response.status}: ${error}`);
+    }
+    
+    const data = await response.json();
+    return data.text;
+  }
+
+  async function handleGenerateNudge() {
+    if (!activeConvId) return;
+    const conv = conversations.find(c => c.id === activeConvId);
+    if (!conv) return;
+    const advisory = conv.handler === 'mukul';
+    const btn = document.getElementById('btnGenerate');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loader"></span> Mukul is typing...';
+    try {
+      const text = await generateNudge(conv, advisory);
+      if (advisory) {
+        if (confirm(`AI Advisory:\n\n${text}\n\nUse this as your message?`)) {
+          document.getElementById('composerInput').value = text.replace(/^Suggestion:\s*/i, '');
+        }
+      } else {
+        // Message was already added to database by backend, reload conversation
+        await loadData();
+        const updatedConv = conversations.find(c => c.id === activeConvId);
+        if (updatedConv) {
+          Object.assign(conv, updatedConv);
+        }
+      }
+      render();
+    } catch (e) {
+      alert('Generation failed: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '◆ Generate AI Nudge';
+    }
+  }
+
+  function nowTs() {
+    const d = new Date();
+    return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  }
+
+  // ============================================================
+  // ACTIONS
+  // ============================================================
+  async function addRepReply() {
+    if (!activeConvId) return;
+    const ta = document.getElementById('composerInput');
+    const text = ta.value.trim();
+    if (!text) { alert('Type the reply first.'); return; }
+    const conv = conversations.find(c => c.id === activeConvId);
+    conv.messages.push({ from: 'rep', text, ts: nowTs(), date: 'today', status: 'received' });
+    ta.value = '';
+    await saveData();
+    render();
+  }
+  async function sendAsMukul() {
+    if (!activeConvId) return;
+    const ta = document.getElementById('composerInput');
+    const text = ta.value.trim();
+    if (!text) { alert('Type your message first.'); return; }
+    const conv = conversations.find(c => c.id === activeConvId);
+    conv.messages.push({ from: 'mukul', text, ts: nowTs(), date: 'today', status: 'draft', read: false, by_ai: false, by_mukul_real: true });
+    ta.value = '';
+    await saveData();
+    render();
+  }
+  async function markSent(convId, msgIdx) {
+    const conv = conversations.find(c => c.id === convId);
+    if (!conv) return;
+    conv.messages[msgIdx].status = 'sent';
+    conv.messages[msgIdx].read = true;
+    delete conv.messages[msgIdx].requires_approval;
+    if (conv.handler === 'approval') { conv.handler = 'ai'; conv.handler_reason = null; }
+    await saveData();
+    render();
+  }
+  async function takeOver(convId) {
+    const conv = conversations.find(c => c.id === convId);
+    if (!conv) return;
+    conv.handler = 'mukul';
+    conv.handler_reason = 'You took over manually. AI on advisory standby.';
+    conv.senior_assigned = null;
+    await saveData();
+    render();
+  }
+  async function returnToAI(convId) {
+    const conv = conversations.find(c => c.id === convId);
+    if (!conv) return;
+    conv.handler = 'ai';
+    conv.handler_reason = null;
+    conv.senior_assigned = null;
+    await saveData();
+    render();
+  }
+  async function approveDraft(convId) {
+    const conv = conversations.find(c => c.id === convId);
+    if (!conv) return;
+    const lastIdx = conv.messages.length - 1;
+    if (lastIdx >= 0 && conv.messages[lastIdx].status === 'draft') {
+      delete conv.messages[lastIdx].requires_approval;
+    }
+    conv.handler = 'ai';
+    conv.handler_reason = null;
+    await saveData();
+    render();
+  }
+  async function forwardToSenior(convId, seniorId) {
+    const conv = conversations.find(c => c.id === convId);
+    if (!conv) return;
+    const senior = SENIORS[seniorId];
+    if (!senior) return;
+    conv.handler = 'senior';
+    conv.senior_assigned = seniorId;
+    conv.handler_reason = `Forwarded to ${senior.name} (${senior.role || 'Senior Manager'}). They have ${settings.senior_layer.escalation_window_hours}h to resolve before it bumps to you.`;
+
+    // Seed the senior thread with a briefing message containing full conversation history
+    if (!conv.senior_thread) conv.senior_thread = [];
+    if (conv.senior_thread.length === 0) {
+      const rep = REPS[conv.rep_id];
+      const cust = conv.customer_id ? CUSTOMERS[conv.customer_id] : null;
+
+      // Generate Mukul's briefing message to senior — async, but we add a placeholder draft now
+      const briefingDraft = await generateSeniorBriefing(conv, senior, rep, cust);
+      conv.senior_thread.push({
+        from: 'ai_to_senior',
+        text: briefingDraft,
+        ts: nowTs(),
+        date: 'today',
+        status: 'draft',
+        read: false
+      });
+    }
+    await saveData();
+    render();
+  }
+
+  // Generate the initial briefing message AI sends to the senior, with full history embedded
+  async function generateSeniorBriefing(conv, senior, rep, cust) {
+    const seniorLang = senior.language || 'hinglish_80';
+    const langLabel = (LANGUAGE_OPTIONS[seniorLang] || {}).label || 'Hinglish 80/20';
+
+    const transcript = conv.messages.map(m => {
+      const who = m.from === 'mukul' ? 'Mukul' : rep.name.split(' ')[0];
+      return `[${m.ts}] ${who}: ${m.text}`;
+    }).join('\n');
+
+    const custBlock = cust ? `Customer: ${cust.name} (${cust.comp_code}), ${cust.city}, ${cust.state}. Type: ${cust.type}, last order: ${cust.last_order_days !== null ? cust.last_order_days + ' days ago' : 'never'}, LTV: ${cust.ltv}.` : `Lead/cluster: ${conv.topic}`;
+
+    const langInstructions = {
+      hinglish_80: `Write in 80% English with light Hindi connectives (toh, achha, kal, lekin). English carries all business terms.`,
+      hinglish_60: `Write in 60% English with more natural Hindi flow.`,
+      english_light_hindi: `Write in mostly English (95%), with very rare Hindi accents (occasional ji, achha) only.`,
+      english_only: `Write in pure professional English. NO Hindi words at all.`
+    }[seniorLang] || 'Write in 80/20 Hinglish.';
+
+    const prompt = `You are Mukul Sareen, founder/CEO of Hi-Tech International Group. You are forwarding a problematic sales situation to your senior manager ${senior.name} (${senior.role || 'Senior Manager'}) for them to handle. They will then take action with the rep and the customer, and report back to you.
+
+LANGUAGE FOR SENIOR: ${langLabel}. ${langInstructions}
+
+CONTEXT:
+- Sales rep: ${rep.name} (EMP ${rep.emp_code}, ${rep.region})
+- ${custBlock}
+- Topic: ${conv.topic}
+- Pipeline stage: ${conv.pipeline_stage}
+- Why I'm forwarding: ${conv.handler_reason}
+
+FULL CONVERSATION HISTORY between me and ${rep.name.split(' ')[0]} (so ${senior.name.split(' ')[0]} has full context):
+${transcript}
+
+Write a single WhatsApp message FROM YOU (Mukul) TO ${senior.name.split(' ')[0]} that:
+1. Briefly explains the situation in 1-2 lines
+2. Shares the FULL conversation transcript verbatim (use the format above with timestamps and names) so ${senior.name.split(' ')[0]} can see exactly what happened
+3. Tells ${senior.name.split(' ')[0]} what you need them to do — be specific
+4. Sets a deadline (within ${settings.senior_layer.escalation_window_hours}h)
+5. Asks them to revert with what they decide
+
+Keep your own framing concise but include the full transcript so they have everything. Output JUST the message text — no JSON, no quotes, no preamble.`;
+
+    try {
+      const response = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1500,
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      if (!response.ok) throw new Error("API " + response.status);
+      const data = await response.json();
+      return data.content.filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+    } catch (e) {
+      // Fallback: synthesize locally if API fails
+      return `${senior.name.split(' ')[0]}, need your help on this one.\n\nRep: ${rep.name} (${rep.region})\n${custBlock}\nIssue: ${conv.handler_reason}\n\n--- FULL CONVERSATION ---\n${transcript}\n\nPlease handle and revert within ${settings.senior_layer.escalation_window_hours}h. Update me with what you decide.`;
+    }
+  }
+
+  // Generate AI's next reply in the senior thread (back-and-forth)
+  async function generateSeniorReply(conv) {
+    const senior = SENIORS[conv.senior_assigned];
+    if (!senior) return;
+    const rep = REPS[conv.rep_id];
+    const cust = conv.customer_id ? CUSTOMERS[conv.customer_id] : null;
+    const seniorLang = senior.language || 'hinglish_80';
+
+    const langInstructions = {
+      hinglish_80: `Write in 80% English with light Hindi connectives (toh, achha, kal, lekin).`,
+      hinglish_60: `Write in 60% English with more natural Hindi flow.`,
+      english_light_hindi: `Write in mostly English (95%) with very rare Hindi accents.`,
+      english_only: `Write in pure professional English. NO Hindi words at all.`
+    }[seniorLang] || 'Write in 80/20 Hinglish.';
+
+    const seniorThread = conv.senior_thread.map(m => {
+      const who = m.from === 'ai_to_senior' ? 'Mukul (you)' : senior.name.split(' ')[0];
+      return `[${m.ts}] ${who}: ${m.text}`;
+    }).join('\n\n');
+
+    const repTranscript = conv.messages.map(m => {
+      const who = m.from === 'mukul' ? 'Mukul' : rep.name.split(' ')[0];
+      return `[${m.ts}] ${who}: ${m.text}`;
+    }).join('\n');
+
+    const prompt = `You are Mukul Sareen, founder/CEO of Hi-Tech International Group. You are in a WhatsApp conversation with your senior manager ${senior.name} (${senior.role || 'Senior Manager'}) about a sales situation you forwarded to them.
+
+LANGUAGE FOR THIS SENIOR: ${langInstructions}
+
+VOICE: Direct, brief, decisive. WhatsApp-style 1-3 lines. Be supportive but accountable. If they need permission for something, decide quickly. If they want to escalate back to you, accept and acknowledge. If they propose a solution, evaluate and approve/redirect.
+
+ORIGINAL SITUATION:
+- Rep: ${rep.name} (${rep.region})
+- ${cust ? `Customer: ${cust.name}` : `Topic: ${conv.topic}`}
+- Why forwarded: ${conv.handler_reason}
+
+REP-MUKUL CONVERSATION (background):
+${repTranscript}
+
+YOUR CONVERSATION WITH ${senior.name.split(' ')[0].toUpperCase()} SO FAR:
+${seniorThread}
+
+Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what they just said. Output JUST the message text.`;
+
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 500,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+    if (!response.ok) throw new Error("API " + response.status);
+    const data = await response.json();
+    return data.content.filter(b => b.type === 'text').map(b => b.text).join('\n').trim();
+  }
+
+  async function handleGenerateSeniorReply(convId) {
+    const conv = conversations.find(c => c.id === convId);
+    if (!conv) return;
+    const btn = document.getElementById('btnSeniorGen_' + convId);
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="loader"></span> typing...'; }
+    try {
+      const text = await generateSeniorReply(conv);
+      conv.senior_thread.push({
+        from: 'ai_to_senior', text, ts: nowTs(), date: 'today', status: 'draft', read: false
+      });
+      await saveData();
+      render();
+    } catch (e) {
+      alert('Generation failed: ' + e.message);
+      if (btn) { btn.disabled = false; btn.innerHTML = '◆ Generate AI reply'; }
+    }
+  }
+
+  async function addSeniorReply(convId) {
+    const conv = conversations.find(c => c.id === convId);
+    if (!conv) return;
+    const ta = document.getElementById('seniorReplyInput_' + convId);
+    const text = ta.value.trim();
+    if (!text) { alert('Type the senior\'s reply first.'); return; }
+    conv.senior_thread.push({
+      from: 'senior', text, ts: nowTs(), date: 'today', status: 'received'
+    });
+    ta.value = '';
+    await saveData();
+    render();
+  }
+
+  async function markSeniorMsgSent(convId, idx) {
+    const conv = conversations.find(c => c.id === convId);
+    if (!conv) return;
+    conv.senior_thread[idx].status = 'sent';
+    conv.senior_thread[idx].read = true;
+    await saveData();
+    render();
+  }
+  async function escalateToMukul(convId) {
+    const conv = conversations.find(c => c.id === convId);
+    if (!conv) return;
+    conv.handler = 'escalated';
+    conv.senior_assigned = null;
+    if (!conv.handler_reason || !conv.handler_reason.includes('bumped')) {
+      conv.handler_reason = (conv.handler_reason || 'Senior could not resolve.') + ' Bumped to you for decision.';
+    }
+    await saveData();
+    render();
+  }
+  async function resolveItem(convId) {
+    const conv = conversations.find(c => c.id === convId);
+    if (!conv) return;
+    conv.handler = 'ai';
+    conv.handler_reason = null;
+    conv.senior_assigned = null;
+    await saveData();
+    render();
+  }
+
+  function setFilter(f) { activeFilter = f; render(); }
+  function selectConv(id) { activeConvId = id; activeTab = 'inbox'; render(); }
+  function setTab(t) { activeTab = t; render(); }
+
+  // ============================================================
+  // RENDER HELPERS
+  // ============================================================
+  function escapeHtml(s) {
+    if (s === null || s === undefined) return '';
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function handlerLabel(h) {
+    if (h === 'ai') return { label: 'AI', cls: 'ai' };
+    if (h === 'escalated') return { label: 'Escalated', cls: 'escalated' };
+    if (h === 'approval') return { label: 'Approve', cls: 'approval' };
+    if (h === 'senior') return { label: 'With Senior', cls: 'senior' };
+    if (h === 'mukul') return { label: 'You', cls: 'mukul' };
+    return { label: h, cls: 'ai' };
+  }
+  function confLevel(n) { return n >= 75 ? 'high' : n >= 55 ? 'med' : 'low'; }
+  function getFilteredConvs() {
+    if (activeFilter === 'all') return conversations;
+    return conversations.filter(c => c.handler === activeFilter);
+  }
+  function greetingTime() {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  // ============================================================
+  // DASHBOARD VIEW
+  // ============================================================
+  function renderDashboard() {
+    const dash = document.getElementById('dashContainer');
+    const escalated = conversations.filter(c => c.handler === 'escalated');
+    const approval = conversations.filter(c => c.handler === 'approval');
+    const senior = conversations.filter(c => c.handler === 'senior');
+    const mukul = conversations.filter(c => c.handler === 'mukul');
+    const aiAuto = conversations.filter(c => c.handler === 'ai');
+
+    const totalNudgesSent = conversations.reduce((s, c) =>
+      s + c.messages.filter(m => m.from === 'mukul' && m.status === 'sent').length, 0);
+    const repReplies = conversations.reduce((s, c) =>
+      s + c.messages.filter(m => m.from === 'rep').length, 0);
+    const draftsPending = conversations.reduce((s, c) =>
+      s + c.messages.filter(m => m.status === 'draft').length, 0);
+
+    // Sort conversations by last activity for the reel
+    const reelConvs = [...conversations].sort((a, b) => {
+      const aLast = a.messages[a.messages.length - 1];
+      const bLast = b.messages[b.messages.length - 1];
+      const order = { today: 2, yesterday: 1 };
+      const aDate = order[aLast?.date] || 0;
+      const bDate = order[bLast?.date] || 0;
+      if (aDate !== bDate) return bDate - aDate;
+      return (bLast?.ts || '').localeCompare(aLast?.ts || '');
+    });
+
+    dash.innerHTML = `
+      <div class="greeting">
+        <h1>${greetingTime()}, Mukul.</h1>
+        <div class="sub">Your AI sales org has <strong>${conversations.length}</strong> active threads. <strong>${escalated.length + approval.length}</strong> need your attention. <strong>${senior.length}</strong> with senior layer.</div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card" onclick="setTab('cc')">
+          <div class="kpi-head">
+            <div class="kpi-icon red">!</div>
+            <div class="kpi-trend">${escalated.length > 0 ? 'requires you' : 'all clear'}</div>
+          </div>
+          <div>
+            <div class="kpi-value">${escalated.length}</div>
+            <div class="kpi-label">Escalations</div>
+          </div>
+        </div>
+        <div class="kpi-card" onclick="setTab('cc')">
+          <div class="kpi-head">
+            <div class="kpi-icon orange">⏸</div>
+            <div class="kpi-trend">awaiting sign-off</div>
+          </div>
+          <div>
+            <div class="kpi-value">${approval.length}</div>
+            <div class="kpi-label">Approval Pending</div>
+          </div>
+        </div>
+        <div class="kpi-card" onclick="setTab('cc')">
+          <div class="kpi-head">
+            <div class="kpi-icon indigo">↗</div>
+            <div class="kpi-trend">senior layer</div>
+          </div>
+          <div>
+            <div class="kpi-value">${senior.length}</div>
+            <div class="kpi-label">With Senior Team</div>
+          </div>
+        </div>
+        <div class="kpi-card" onclick="setTab('inbox'); setFilter('ai');">
+          <div class="kpi-head">
+            <div class="kpi-icon green">●</div>
+            <div class="kpi-trend">running themselves</div>
+          </div>
+          <div>
+            <div class="kpi-value">${aiAuto.length}</div>
+            <div class="kpi-label">AI Autonomous</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section reel-wrapper">
+        <div class="sec-head">
+          <div class="sec-title">Live Conversations<span class="reel-live">Live</span></div>
+          <button class="sec-action" onclick="setTab('inbox')">See all →</button>
+        </div>
+        <div class="reel">
+          ${reelConvs.map(c => renderReelCard(c)).join('')}
+        </div>
+      </div>
+
+      ${escalated.length > 0 ? `
+      <div class="section">
+        <div class="sec-head">
+          <div class="sec-title">Need your call</div>
+          <button class="sec-action" onclick="setTab('cc')">Open Command Centre →</button>
+        </div>
+        ${escalated.slice(0, 3).map(c => renderActionCard(c, 'escalated')).join('')}
+      </div>` : ''}
+
+      ${approval.length > 0 ? `
+      <div class="section">
+        <div class="sec-head">
+          <div class="sec-title">Approval queue</div>
+        </div>
+        ${approval.slice(0, 3).map(c => renderActionCard(c, 'approval')).join('')}
+      </div>` : ''}
+
+      ${senior.length > 0 ? `
+      <div class="section">
+        <div class="sec-head">
+          <div class="sec-title">With senior layer</div>
+        </div>
+        ${senior.map(c => renderActionCard(c, 'senior')).join('')}
+      </div>` : ''}
+
+      ${mukul.length > 0 ? `
+      <div class="section">
+        <div class="sec-head">
+          <div class="sec-title">You're handling</div>
+        </div>
+        ${mukul.map(c => renderActionCard(c, 'mukul')).join('')}
+      </div>` : ''}
+
+      <div class="section">
+        <div class="sec-head">
+          <div class="sec-title">AI autonomous</div>
+          <span class="sec-action" style="cursor:default;">${aiAuto.length} threads</span>
+        </div>
+        <div class="auto-list">
+          ${aiAuto.length === 0 ? '<div style="padding:24px; text-align:center; color: var(--text-3);">No autonomous threads right now.</div>' :
+            aiAuto.map(c => renderAutoRow(c)).join('')}
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="sec-head">
+          <div class="sec-title">Today's brief</div>
+        </div>
+        <div class="brief-card">
+          <div class="brief-item">
+            <div class="brief-num">${totalNudgesSent}</div>
+            <div class="brief-label">Nudges sent</div>
+            <div class="brief-detail">across ${conversations.length} active threads</div>
+          </div>
+          <div class="brief-item b2">
+            <div class="brief-num">${repReplies}</div>
+            <div class="brief-label">Rep replies parsed</div>
+            <div class="brief-detail">AI contextualised and acted</div>
+          </div>
+          <div class="brief-item b3">
+            <div class="brief-num">${draftsPending}</div>
+            <div class="brief-label">Drafts queued</div>
+            <div class="brief-detail">ready for WhatsApp dispatch</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderReelCard(c) {
+    const rep = REPS[c.rep_id];
+    const cust = c.customer_id ? CUSTOMERS[c.customer_id] : null;
+    const lastMsg = c.messages[c.messages.length - 1];
+    const handler = handlerLabel(c.handler);
+    return `
+      <div class="reel-card ${c.fresh ? 'fresh' : ''}" onclick="selectConv('${c.id}')">
+        <div class="reel-head">
+          <div class="reel-avatar" style="background: ${rep.color}22; color: ${rep.color};">${rep.avatar}</div>
+          <div class="reel-rep">
+            <div class="reel-rep-name">${escapeHtml(rep.name.split(' ').slice(0,2).join(' '))}</div>
+            <div class="reel-rep-meta">${escapeHtml(rep.region)}</div>
+          </div>
+          <div class="reel-time">${escapeHtml(lastMsg ? lastMsg.ts : '')}</div>
+        </div>
+        <div class="reel-customer">${escapeHtml(cust ? cust.name : c.topic)}</div>
+        <div class="reel-msg">
+          <span class="who ${lastMsg.from === 'mukul' ? 'mukul' : 'rep'}">${lastMsg.from === 'mukul' ? 'Mukul' : rep.name.split(' ')[0]}</span>${escapeHtml(lastMsg.text.substring(0, 90))}${lastMsg.text.length > 90 ? '…' : ''}
+        </div>
+        <div class="reel-foot">
+          <span class="pill ${handler.cls}"><span class="dot"></span> ${handler.label}</span>
+          <span class="pill urgency-${c.urgency}">${c.urgency}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderActionCard(c, type) {
+    const rep = REPS[c.rep_id];
+    const cust = c.customer_id ? CUSTOMERS[c.customer_id] : null;
+    const recent = c.messages.slice(-2);
+    const senior = c.senior_assigned ? SENIORS[c.senior_assigned] : null;
+
+    let actions = '';
+    if (type === 'escalated') {
+      const repReportsTo = rep && rep.reports_to;
+      const seniorBtns = Object.entries(SENIORS)
+        .filter(([id]) => settings.seniors[id]?.enabled)
+        .map(([id, s]) => {
+          const isPrimary = id === repReportsTo;
+          const cls = isPrimary ? 'btn-tinted' : 'btn-secondary';
+          const label = isPrimary ? `↗ ${s.name.split(' ')[0]} (manager)` : `↗ ${s.name.split(' ')[0]}`;
+          return `<button class="btn ${cls} btn-sm" onclick="forwardToSenior('${c.id}','${id}')">${label}</button>`;
+        }).join('');
+      actions = `
+        <button class="btn btn-primary btn-sm" onclick="selectConv('${c.id}')">Open</button>
+        <button class="btn btn-tinted btn-sm" onclick="takeOver('${c.id}'); selectConv('${c.id}');">Take over</button>
+        ${seniorBtns}
+        <button class="btn btn-tinted-green btn-sm" onclick="resolveItem('${c.id}')">Resolve</button>
+      `;
+    } else if (type === 'approval') {
+      actions = `
+        <button class="btn btn-tinted-green btn-sm" onclick="approveDraft('${c.id}')">Approve draft</button>
+        <button class="btn btn-primary btn-sm" onclick="selectConv('${c.id}')">Edit</button>
+        <button class="btn btn-tinted-orange btn-sm" onclick="takeOver('${c.id}'); selectConv('${c.id}');">Take over</button>
+      `;
+    } else if (type === 'senior') {
+      actions = `
+        <button class="btn btn-primary btn-sm" onclick="selectConv('${c.id}')">Open</button>
+        <button class="btn btn-tinted-red btn-sm" onclick="escalateToMukul('${c.id}')">Bump to me now</button>
+        <button class="btn btn-tinted-green btn-sm" onclick="resolveItem('${c.id}')">Resolved</button>
+      `;
+    } else if (type === 'mukul') {
+      actions = `
+        <button class="btn btn-primary btn-sm" onclick="selectConv('${c.id}')">Open</button>
+        <button class="btn btn-secondary btn-sm" onclick="returnToAI('${c.id}')">Return to AI</button>
+      `;
+    }
+
+    return `
+      <div class="action-card ${type}">
+        <div class="ac-head">
+          <div class="ac-avatar" style="background: ${rep.color}22; color: ${rep.color};">${rep.avatar}</div>
+          <div class="ac-info">
+            <div class="ac-rep">${escapeHtml(rep.name)} <span class="arrow">→</span> <span class="cust">${escapeHtml(cust ? cust.name : c.topic)}</span></div>
+            <div class="ac-meta">EMP ${escapeHtml(rep.emp_code)} · ${escapeHtml(c.topic)}${senior ? ' · with <strong style="color: ' + senior.color + ';">' + escapeHtml(senior.name) + '</strong>' : ''}</div>
+          </div>
+          <div class="ac-pills">
+            <span class="conf">
+              <span>conf</span>
+              <span class="conf-bar"><span class="conf-fill ${confLevel(c.ai_confidence)}" style="width:${c.ai_confidence}%"></span></span>
+              <span>${c.ai_confidence}%</span>
+            </span>
+            <span class="pill urgency-${c.urgency}">${c.urgency}</span>
+          </div>
+        </div>
+        <div class="ac-reason">
+          <span class="lbl">${type === 'escalated' ? 'Why escalated' : type === 'approval' ? 'Why approval needed' : type === 'senior' ? 'Routed to senior' : 'Why you took over'}</span>
+          ${escapeHtml(c.handler_reason || '')}
+        </div>
+        ${type !== 'mukul' ? `
+        <div class="ac-context">
+          ${recent.map(m => `
+            <div class="turn">
+              <span class="who ${m.from === 'mukul' ? 'mukul' : 'rep'}">${m.from === 'mukul' ? 'Mukul' : rep.name.split(' ')[0]}</span>
+              ${escapeHtml(m.text.length > 180 ? m.text.substring(0, 180) + '…' : m.text)}
+            </div>
+          `).join('')}
+        </div>` : ''}
+        <div class="ac-actions">${actions}</div>
+      </div>
+    `;
+  }
+
+  function renderAutoRow(c) {
+    const rep = REPS[c.rep_id];
+    const cust = c.customer_id ? CUSTOMERS[c.customer_id] : null;
+    return `
+      <div class="auto-row" onclick="selectConv('${c.id}')">
+        <div class="rep-avatar" style="background: ${rep.color}22; color: ${rep.color};">${rep.avatar}</div>
+        <div class="info">
+          <div class="name">${escapeHtml(rep.name.split(' ').slice(0,2).join(' '))} → ${escapeHtml(cust ? cust.name : c.topic)}</div>
+          <div class="obj">${escapeHtml(c.objective)}</div>
+        </div>
+        <span class="conf">
+          <span class="conf-bar"><span class="conf-fill ${confLevel(c.ai_confidence)}" style="width:${c.ai_confidence}%"></span></span>
+          <span>${c.ai_confidence}%</span>
+        </span>
+        <span class="pill urgency-${c.urgency}">${c.urgency}</span>
+      </div>
+    `;
+  }
+
+  // ============================================================
+  // INBOX VIEW
+  // ============================================================
+  function renderSidebar() {
+    const list = document.getElementById('convList');
+    const filtered = getFilteredConvs();
+    document.getElementById('sideCount').textContent = `${filtered.length} active`;
+    document.querySelectorAll('.chip').forEach(ch => {
+      ch.classList.toggle('active', ch.dataset.filter === activeFilter);
+    });
+    if (filtered.length === 0) {
+      list.innerHTML = '<div style="padding:30px; text-align:center; color: var(--text-3); font-size: 13px;">No conversations match.</div>';
+      return;
+    }
+    list.innerHTML = filtered.map(c => {
+      const rep = REPS[c.rep_id];
+      const cust = c.customer_id ? CUSTOMERS[c.customer_id] : null;
+      const lastMsg = c.messages[c.messages.length - 1];
+      const isActive = c.id === activeConvId;
+      const lastFromMukul = lastMsg && lastMsg.from === 'mukul';
+      const previewText = lastMsg ? lastMsg.text : '';
+      const handler = handlerLabel(c.handler);
+      return `
+        <div class="conv-item ${isActive ? 'active' : ''}" onclick="selectConv('${c.id}')">
+          <div class="rep-avatar" style="background: ${rep.color}22; color: ${rep.color};">${rep.avatar}</div>
+          <div class="conv-info">
+            <div class="conv-line1">
+              <div class="conv-rep-name">${escapeHtml(rep.name.split(' ').slice(0,2).join(' '))}</div>
+              <div class="conv-time">${escapeHtml(lastMsg ? lastMsg.ts : '')}</div>
+            </div>
+            <div class="conv-customer">${escapeHtml(cust ? cust.name : c.topic.substring(0, 36))}</div>
+            <div class="conv-preview ${(!lastFromMukul && !isActive) ? 'unread' : ''}">
+              ${lastFromMukul ? '<span class="by">Mukul</span>' : ''}${escapeHtml(previewText.substring(0, 60))}${previewText.length > 60 ? '…' : ''}
+            </div>
+          </div>
+          <div class="conv-badges">
+            <span class="pill ${handler.cls}"><span class="dot"></span> ${handler.label}</span>
+            <span class="pill urgency-${c.urgency}">${c.urgency}</span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderHandlerBar(conv) {
+    const handler = handlerLabel(conv.handler);
+    if (conv.handler === 'ai') {
+      return `<div class="handler-bar ai">
+        <div class="handler-info">
+          <span class="pill ai"><span class="dot"></span> AI</span>
+          <div class="text">AI handling autonomously · confidence <strong>${conv.ai_confidence}%</strong></div>
+        </div>
+        <div class="handler-actions">
+          <button class="btn btn-secondary btn-sm" onclick="takeOver('${conv.id}')">Take over</button>
+        </div>
+      </div>`;
+    }
+    if (conv.handler === 'escalated') {
+      const rep = REPS[conv.rep_id];
+      const repReportsTo = rep && rep.reports_to;
+      const seniorBtns = Object.entries(SENIORS)
+        .filter(([id]) => settings.seniors[id]?.enabled)
+        .map(([id, s]) => {
+          const isPrimary = id === repReportsTo;
+          const cls = isPrimary ? 'btn-tinted' : 'btn-secondary';
+          const label = isPrimary ? `↗ ${s.name.split(' ')[0]} (manager)` : `↗ ${s.name.split(' ')[0]}`;
+          return `<button class="btn ${cls} btn-sm" onclick="forwardToSenior('${conv.id}','${id}')">${label}</button>`;
+        }).join('');
+      return `<div class="handler-bar escalated">
+        <div class="handler-info">
+          <span class="pill escalated"><span class="dot"></span> Escalated to you</span>
+          <div class="text">${escapeHtml(conv.handler_reason)}</div>
+        </div>
+        <div class="handler-actions">
+          ${seniorBtns}
+          <button class="btn btn-tinted btn-sm" onclick="takeOver('${conv.id}')">Take over</button>
+          <button class="btn btn-tinted-green btn-sm" onclick="resolveItem('${conv.id}')">Resolve</button>
+        </div>
+      </div>`;
+    }
+    if (conv.handler === 'approval') {
+      return `<div class="handler-bar approval">
+        <div class="handler-info">
+          <span class="pill approval"><span class="dot"></span> Approval pending</span>
+          <div class="text">${escapeHtml(conv.handler_reason)}</div>
+        </div>
+        <div class="handler-actions">
+          <button class="btn btn-tinted-green btn-sm" onclick="approveDraft('${conv.id}')">Approve</button>
+          <button class="btn btn-tinted-orange btn-sm" onclick="takeOver('${conv.id}')">Take over instead</button>
+        </div>
+      </div>`;
+    }
+    if (conv.handler === 'senior') {
+      const senior = SENIORS[conv.senior_assigned];
+      return `<div class="handler-bar senior">
+        <div class="handler-info">
+          <span class="pill senior"><span class="dot"></span> With ${senior ? senior.name.split(' ')[0] : 'Senior'}</span>
+          <div class="text">${escapeHtml(conv.handler_reason)}</div>
+        </div>
+        <div class="handler-actions">
+          <button class="btn btn-tinted-red btn-sm" onclick="escalateToMukul('${conv.id}')">Bump to me</button>
+          <button class="btn btn-tinted-green btn-sm" onclick="resolveItem('${conv.id}')">Resolved</button>
+        </div>
+      </div>`;
+    }
+    if (conv.handler === 'mukul') {
+      return `<div class="handler-bar mukul">
+        <div class="handler-info">
+          <span class="pill mukul"><span class="dot"></span> You're handling</span>
+          <div class="text">AI on advisory standby. Use "Get AI Suggestion" to consult.</div>
+        </div>
+        <div class="handler-actions">
+          <button class="btn btn-secondary btn-sm" onclick="returnToAI('${conv.id}')">Return to AI</button>
+        </div>
+      </div>`;
+    }
+    return '';
+  }
+
+  function renderSeniorThreadPanel(conv) {
+    if (conv.handler !== 'senior' || !conv.senior_assigned) return '';
+    const senior = SENIORS[conv.senior_assigned];
+    if (!senior) return '';
+    const thread = conv.senior_thread || [];
+
+    const msgsHtml = thread.length === 0
+      ? '<div class="stp-empty">No messages with senior yet — generate the briefing.</div>'
+      : thread.map((m, idx) => {
+          const cls = m.from === 'ai_to_senior' ? 'ai_to_senior' : 'senior';
+          const fromLabel = m.from === 'ai_to_senior' ? 'Mukul → ' + senior.name.split(' ')[0] : senior.name.split(' ').slice(0,2).join(' ');
+          let actionsHtml = '';
+          if (m.status === 'draft' && m.from === 'ai_to_senior') {
+            const link = `https://wa.me/${senior.phone}?text=${encodeURIComponent(m.text)}`;
+            actionsHtml = `<div class="actions">
+              <a href="${link}" target="_blank" rel="noopener" onclick="markSeniorMsgSent('${conv.id}', ${idx})">Send WhatsApp</a>
+              <button onclick="markSeniorMsgSent('${conv.id}', ${idx})">Mark sent</button>
+            </div>`;
+          }
+          let footStatus = '';
+          if (m.status === 'draft') footStatus = ' · awaiting send';
+          else if (m.status === 'sent') footStatus = ' ✓✓';
+          return `
+            <div class="stp-msg ${cls}">
+              <div class="from">${escapeHtml(fromLabel)}</div>
+              <div class="body">${escapeHtml(m.text)}</div>
+              <div class="time">${escapeHtml(m.ts)}${footStatus}</div>
+              ${actionsHtml}
+            </div>
+          `;
+        }).join('');
+
+    return `
+      <div class="senior-thread-panel">
+        <div class="stp-head">
+          <div class="stp-title">
+            <span class="dot"></span>
+            Senior layer thread · with ${escapeHtml(senior.name)} (${escapeHtml(senior.role || 'Senior Manager')})
+          </div>
+          <a class="btn btn-secondary btn-sm" href="https://wa.me/${senior.phone}" target="_blank" rel="noopener">Open WhatsApp</a>
+        </div>
+        <div class="stp-msgs" id="stp_msgs_${conv.id}">${msgsHtml}</div>
+        <div class="stp-composer">
+          <textarea class="stp-input" id="seniorReplyInput_${conv.id}" placeholder="Simulate ${escapeHtml(senior.name.split(' ')[0])}'s reply..."></textarea>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <button class="btn btn-primary btn-sm" id="btnSeniorGen_${conv.id}" onclick="handleGenerateSeniorReply('${conv.id}')">◆ Generate AI reply</button>
+            <button class="btn btn-secondary btn-sm" onclick="addSeniorReply('${conv.id}')">Add senior reply</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderChatPane() {
+    const pane = document.getElementById('chatPane');
+    if (!activeConvId) {
+      pane.innerHTML = `<div class="chat-empty">
+        <div class="icon">◈</div>
+        <h2>Select a conversation</h2>
+        <p>Each thread shows the AI messaging your sales reps in your voice. Escalations live in Command Centre.</p>
+      </div>`;
+      return;
+    }
+    const conv = conversations.find(c => c.id === activeConvId);
+    if (!conv) return;
+    const rep = REPS[conv.rep_id];
+    const cust = conv.customer_id ? CUSTOMERS[conv.customer_id] : null;
+
+    let messagesHtml = '';
+    let lastDate = null;
+    conv.messages.forEach((m, idx) => {
+      if (m.date !== lastDate) {
+        messagesHtml += `<div class="day-divider">${escapeHtml(m.date || 'today')}</div>`;
+        lastDate = m.date;
+      }
+      const cls = m.from === 'mukul' ? 'mukul' : 'rep';
+      const draftCls = m.status === 'draft' ? (m.requires_approval ? ' draft approval' : ' draft') : '';
+      const fromLabel = m.from === 'mukul' ? 'Mukul Sareen' : rep.name.split(' ').slice(0,2).join(' ');
+      const realTag = (m.from === 'mukul' && m.by_mukul_real) ? '<span class="msg-real">real</span>' : '';
+
+      let footHtml = '';
+      if (m.from === 'mukul') {
+        if (m.status === 'sent') footHtml = `<div class="msg-foot">${escapeHtml(m.ts)} ✓✓</div>`;
+        else if (m.status === 'draft') footHtml = `<div class="msg-foot">${escapeHtml(m.ts)} · awaiting send</div>`;
+      } else {
+        footHtml = `<div class="msg-foot">${escapeHtml(m.ts)}</div>`;
+      }
+
+      let actionsHtml = '';
+      if (m.status === 'draft' && m.from === 'mukul') {
+        const link = `https://wa.me/${rep.phone}?text=${encodeURIComponent(m.text)}`;
+        actionsHtml = m.requires_approval
+          ? `<div class="msg-actions"><span style="opacity: 0.85; padding: 4px 9px;">⏸ Approve in handler bar above</span></div>`
+          : `<div class="msg-actions">
+              <a href="${link}" target="_blank" rel="noopener" onclick="markSent('${conv.id}', ${idx})">Send WhatsApp</a>
+              <button onclick="markSent('${conv.id}', ${idx})">Mark sent</button>
+            </div>`;
+      }
+
+      messagesHtml += `
+        <div class="msg ${cls}${draftCls}">
+          <div class="msg-from">${escapeHtml(fromLabel)}${realTag}</div>
+          <div class="msg-body">${escapeHtml(m.text)}</div>
+          ${footHtml}
+          ${actionsHtml}
+        </div>
+      `;
+    });
+
+    const isMukulHandling = conv.handler === 'mukul';
+    const placeholder = isMukulHandling
+      ? `Type your own message to ${rep.name.split(' ')[0]}...`
+      : `Simulate ${rep.name.split(' ')[0]}'s reply...`;
+
+    pane.innerHTML = `
+      <div class="chat-head">
+        <div class="rep-avatar" style="width: 38px; height: 38px; background: ${rep.color}22; color: ${rep.color};">${rep.avatar}</div>
+        <div>
+          <div class="chat-rep-name">${escapeHtml(rep.name)}</div>
+          <div class="chat-rep-meta">
+            EMP ${escapeHtml(rep.emp_code)} · <span>${escapeHtml(rep.region)}</span> · +${escapeHtml(rep.phone)}
+            ${rep.intensity ? ` · <span style="color:${(INTENSITY_OPTIONS[rep.intensity]||{}).color || 'var(--text-2)'}; font-weight:600;">${(INTENSITY_OPTIONS[rep.intensity]||{}).label || ''}</span>` : ''}
+            ${rep.language ? ` · <span style="color:var(--blue); font-weight:600;">${(LANGUAGE_OPTIONS[rep.language]||{}).short || ''}</span>` : ''}
+          </div>
+        </div>
+        <a class="btn btn-secondary btn-sm" href="https://wa.me/${rep.phone}" target="_blank" rel="noopener">Open WhatsApp</a>
+      </div>
+      ${renderHandlerBar(conv)}
+      <div class="strategy-strip">
+        <div class="strat-cell">
+          <div class="strat-label">Topic / Customer</div>
+          <div class="strat-val">${escapeHtml(conv.topic)}${cust ? ' · <strong>' + escapeHtml(cust.name) + '</strong>' : ''}</div>
+        </div>
+        <div class="strat-cell">
+          <div class="strat-label">Objective · conf ${conv.ai_confidence}%</div>
+          <div class="strat-val objective">${escapeHtml(conv.objective)}</div>
+        </div>
+        <div class="strat-cell">
+          <div class="strat-label">Pipeline / Tactic</div>
+          <div class="strat-val">${escapeHtml(conv.pipeline_stage)} · ${escapeHtml(conv.tactic)}</div>
+        </div>
+      </div>
+      <div class="messages" id="messages">${messagesHtml}</div>
+      ${renderSeniorThreadPanel(conv)}
+      <div class="composer">
+        <div class="composer-row">
+          <textarea class="composer-input" id="composerInput" placeholder="${escapeHtml(placeholder)}"></textarea>
+          <div class="composer-buttons">
+            ${isMukulHandling
+              ? `<button class="btn btn-orange" onclick="sendAsMukul()">Send as you</button>
+                 <button class="btn btn-secondary" id="btnGenerate" onclick="handleGenerateNudge()">Get AI suggestion</button>
+                 <button class="btn btn-ghost btn-sm" onclick="addRepReply()">Add rep reply</button>`
+              : `<button class="btn btn-primary" id="btnGenerate" onclick="handleGenerateNudge()">◆ Generate AI nudge</button>
+                 <button class="btn btn-secondary" onclick="addRepReply()">Add rep reply</button>`
+            }
+          </div>
+        </div>
+        <div class="composer-hints">
+          <div>${conv.messages.length} messages · ${escapeHtml(conv.messages.length ? conv.messages[conv.messages.length-1].ts : '—')}</div>
+          <div>${isMukulHandling ? 'AI advisory only' : 'AI auto-generates · drafts open WhatsApp'}</div>
+        </div>
+      </div>
+    `;
+    setTimeout(() => {
+      const m = document.getElementById('messages');
+      if (m) m.scrollTop = m.scrollHeight;
+    }, 30);
+  }
+
+  // ============================================================
+  // COMMAND CENTRE VIEW
+  // ============================================================
+  function renderCommandCentre() {
+    const cc = document.getElementById('ccContainer');
+    const escalated = conversations.filter(c => c.handler === 'escalated');
+    const approval = conversations.filter(c => c.handler === 'approval');
+    const senior = conversations.filter(c => c.handler === 'senior');
+    const mukul = conversations.filter(c => c.handler === 'mukul');
+
+    cc.innerHTML = `
+      <div class="greeting">
+        <h1>Command Centre</h1>
+        <div class="sub">Where your AI org hands the wheel back to you. Review, route to senior layer, or take over directly.</div>
+      </div>
+
+      <div class="section">
+        <div class="sec-head"><div class="sec-title">Escalations · need your call</div><span class="sec-action" style="cursor:default;">${escalated.length}</span></div>
+        ${escalated.length === 0 ? '<div class="empty-card">No escalations. AI is handling everything.</div>' :
+          escalated.map(c => renderActionCard(c, 'escalated')).join('')}
+      </div>
+
+      <div class="section">
+        <div class="sec-head"><div class="sec-title">Approval queue</div><span class="sec-action" style="cursor:default;">${approval.length}</span></div>
+        ${approval.length === 0 ? '<div class="empty-card">No drafts awaiting sign-off.</div>' :
+          approval.map(c => renderActionCard(c, 'approval')).join('')}
+      </div>
+
+      <div class="section">
+        <div class="sec-head"><div class="sec-title">With senior layer</div><span class="sec-action" style="cursor:default;">${senior.length}</span></div>
+        ${senior.length === 0 ? '<div class="empty-card">Nothing routed to senior layer.</div>' :
+          senior.map(c => renderActionCard(c, 'senior')).join('')}
+      </div>
+
+      <div class="section">
+        <div class="sec-head"><div class="sec-title">You're handling</div><span class="sec-action" style="cursor:default;">${mukul.length}</span></div>
+        ${mukul.length === 0 ? '<div class="empty-card">You haven\'t taken over any threads.</div>' :
+          mukul.map(c => renderActionCard(c, 'mukul')).join('')}
+      </div>
+    `;
+  }
+
+  // ============================================================
+  // SETTINGS VIEW
+  // ============================================================
+  function renderSettings() {
+    const s = document.getElementById('settingsContainer');
+    const ig = settings.integrations;
+
+    s.innerHTML = `
+      <div class="settings-header">
+        <h1>Settings</h1>
+        <p>Plug in the APIs that power your AI sales org. Configure your team, senior layer, escalation thresholds, and WhatsApp Business connection.</p>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-head">
+          <div class="sg-icon" style="background: var(--blue-soft); color: var(--blue);">◔</div>
+          <div class="sg-info">
+            <div class="sg-title">Sales Team</div>
+            <div class="sg-desc">WhatsApp numbers, communication intensity, and language tone — per person</div>
+          </div>
+          <span class="sg-status connected">${Object.keys(settings.team).length} reps</span>
+        </div>
+        <div class="team-list">
+          ${Object.entries(settings.team).map(([rid, r]) => renderTeamRow(rid, r)).join('')}
+        </div>
+        <div class="settings-actions">
+          <button class="btn btn-secondary btn-sm" onclick="addTeamMember()">+ Add team member</button>
+          <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save</button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-head">
+          <div class="sg-icon" style="background: var(--orange-soft); color: var(--orange);">◆</div>
+          <div class="sg-info">
+            <div class="sg-title">Claude API</div>
+            <div class="sg-desc">Powers all AI message generation, analysis, and reasoning</div>
+          </div>
+          <span class="sg-status ${ig.claude.connected ? 'connected' : 'disconnected'}">${ig.claude.connected ? '● Connected' : 'Not connected'}</span>
+        </div>
+        <div class="settings-fields">
+          <div class="field-row">
+            <label class="field-label">API Key <span class="req">*</span></label>
+            <input class="field-input mono" type="password" value="${escapeHtml(ig.claude.api_key)}" placeholder="sk-ant-..." onchange="updateSetting('integrations.claude.api_key', this.value)">
+          </div>
+          <div class="field-row">
+            <label class="field-label">Model</label>
+            <input class="field-input mono" type="text" value="${escapeHtml(ig.claude.model)}" onchange="updateSetting('integrations.claude.model', this.value)">
+          </div>
+        </div>
+        <div class="settings-actions">
+          <button class="btn btn-secondary btn-sm" onclick="testConnection('claude')">Test connection</button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-head">
+          <div class="sg-icon" style="background: var(--green-soft); color: var(--green);">◉</div>
+          <div class="sg-info">
+            <div class="sg-title">WhatsApp Business API</div>
+            <div class="sg-desc">Send messages to reps and customers · receive incoming via webhook</div>
+          </div>
+          <span class="sg-status ${ig.whatsapp.connected ? 'connected' : 'disconnected'}">${ig.whatsapp.connected ? '● Connected' : 'Not connected'}</span>
+        </div>
+        <div class="settings-fields">
+          <div class="field-row">
+            <label class="field-label">Phone Number ID <span class="req">*</span></label>
+            <input class="field-input mono" type="text" value="${escapeHtml(ig.whatsapp.phone_id)}" placeholder="106540352242922" onchange="updateSetting('integrations.whatsapp.phone_id', this.value)">
+          </div>
+          <div class="field-row">
+            <label class="field-label">Access Token <span class="req">*</span></label>
+            <input class="field-input mono" type="password" value="${escapeHtml(ig.whatsapp.access_token)}" placeholder="EAAB..." onchange="updateSetting('integrations.whatsapp.access_token', this.value)">
+          </div>
+          <div class="field-row">
+            <label class="field-label">Webhook Verify Token</label>
+            <input class="field-input mono" type="text" value="${escapeHtml(ig.whatsapp.verify_token)}" placeholder="hi-tech-2026" onchange="updateSetting('integrations.whatsapp.verify_token', this.value)">
+          </div>
+        </div>
+        <div class="settings-actions">
+          <button class="btn btn-secondary btn-sm" onclick="testConnection('whatsapp')">Test connection</button>
+          <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save</button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-head">
+          <div class="sg-icon" style="background: var(--blue-soft); color: var(--blue);">◗</div>
+          <div class="sg-info">
+            <div class="sg-title">CRM / Sales Comments API</div>
+            <div class="sg-desc">Pulls all field comments from your sales force app — the data flowing in from reps</div>
+          </div>
+          <span class="sg-status ${ig.crm.connected ? 'connected' : 'disconnected'}">${ig.crm.connected ? '● Connected' : 'Not connected'}</span>
+        </div>
+        <div class="settings-fields">
+          <div class="field-row">
+            <label class="field-label">API Endpoint <span class="req">*</span></label>
+            <input class="field-input mono" type="text" value="${escapeHtml(ig.crm.endpoint)}" placeholder="https://api.hitech-crm.in/v1/comments" onchange="updateSetting('integrations.crm.endpoint', this.value)">
+          </div>
+          <div class="field-row">
+            <label class="field-label">API Key <span class="req">*</span></label>
+            <input class="field-input mono" type="password" value="${escapeHtml(ig.crm.api_key)}" onchange="updateSetting('integrations.crm.api_key', this.value)">
+          </div>
+        </div>
+        <div class="settings-actions">
+          <button class="btn btn-secondary btn-sm" onclick="testConnection('crm')">Test connection</button>
+          <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save</button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-head">
+          <div class="sg-icon" style="background: var(--green-soft); color: var(--green);">⟳</div>
+          <div class="sg-info">
+            <div class="sg-title">CRM Sync Status</div>
+            <div class="sg-desc">Auto-syncs every 60 minutes · Fetches new comments from CRM and creates conversations</div>
+          </div>
+          <span class="sg-status connected" id="crmSyncStatus">Loading...</span>
+        </div>
+        <div class="settings-fields" id="crmSyncDetails">
+          <div style="text-align: center; padding: 20px; color: var(--text-3);">
+            <span class="loader"></span> Loading sync status...
+          </div>
+        </div>
+        <div class="settings-actions">
+          <button class="btn btn-primary btn-sm" id="btnManualSync" onclick="manualCRMSync()">
+            <span>⟳ Sync Now</span>
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="loadCRMSyncStatus()">Refresh Status</button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-head">
+          <div class="sg-icon" style="background: var(--purple-soft); color: var(--purple);">⏱</div>
+          <div class="sg-info">
+            <div class="sg-title">Visit Check-in/out App API</div>
+            <div class="sg-desc">Gets visit telemetry — duration, location, no-checkout anomalies</div>
+          </div>
+          <span class="sg-status ${ig.visit_app.connected ? 'connected' : 'disconnected'}">${ig.visit_app.connected ? '● Connected' : 'Not connected'}</span>
+        </div>
+        <div class="settings-fields">
+          <div class="field-row">
+            <label class="field-label">API Endpoint</label>
+            <input class="field-input mono" type="text" value="${escapeHtml(ig.visit_app.endpoint)}" placeholder="https://visits.hitech.in/api/v1" onchange="updateSetting('integrations.visit_app.endpoint', this.value)">
+          </div>
+          <div class="field-row">
+            <label class="field-label">API Key</label>
+            <input class="field-input mono" type="password" value="${escapeHtml(ig.visit_app.api_key)}" onchange="updateSetting('integrations.visit_app.api_key', this.value)">
+          </div>
+        </div>
+        <div class="settings-actions">
+          <button class="btn btn-secondary btn-sm" onclick="testConnection('visit_app')">Test connection</button>
+          <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save</button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-head">
+          <div class="sg-icon" style="background: var(--teal-soft); color: var(--teal);">✉</div>
+          <div class="sg-info">
+            <div class="sg-title">Email / SMTP</div>
+            <div class="sg-desc">Send formal emails to customers when WhatsApp isn't enough</div>
+          </div>
+          <span class="sg-status ${ig.email.connected ? 'connected' : 'disconnected'}">${ig.email.connected ? '● Connected' : 'Not connected'}</span>
+        </div>
+        <div class="settings-fields">
+          <div class="field-row">
+            <label class="field-label">SMTP Host</label>
+            <input class="field-input mono" type="text" value="${escapeHtml(ig.email.smtp_host)}" placeholder="smtp.gmail.com" onchange="updateSetting('integrations.email.smtp_host', this.value)">
+          </div>
+          <div class="field-row">
+            <label class="field-label">Port</label>
+            <input class="field-input mono" type="text" value="${escapeHtml(ig.email.smtp_port)}" onchange="updateSetting('integrations.email.smtp_port', this.value)">
+          </div>
+          <div class="field-row">
+            <label class="field-label">Username</label>
+            <input class="field-input mono" type="text" value="${escapeHtml(ig.email.smtp_user)}" placeholder="ai@hitechgroup.in" onchange="updateSetting('integrations.email.smtp_user', this.value)">
+          </div>
+          <div class="field-row">
+            <label class="field-label">Password</label>
+            <input class="field-input mono" type="password" value="${escapeHtml(ig.email.smtp_pass)}" onchange="updateSetting('integrations.email.smtp_pass', this.value)">
+          </div>
+        </div>
+        <div class="settings-actions">
+          <button class="btn btn-secondary btn-sm" onclick="testConnection('email')">Test connection</button>
+          <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save</button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-head">
+          <div class="sg-icon" style="background: var(--indigo-soft); color: var(--indigo);">↗</div>
+          <div class="sg-info">
+            <div class="sg-title">Senior Layer · Escalation Buffer</div>
+            <div class="sg-desc">Senior people who handle escalations BEFORE they reach you. The AI forwards full conversation history and continues two-way.</div>
+          </div>
+          <span class="sg-status connected">${Object.keys(settings.seniors).length} senior managers</span>
+        </div>
+        <div class="senior-grid">
+          ${Object.entries(settings.seniors).map(([id, s]) => `
+            <div class="senior-card ${s.enabled ? 'active' : ''}">
+              <div class="ac-avatar" style="background: ${s.color}22; color: ${s.color}; width: 40px; height: 40px; font-size: 13px;">${escapeHtml(s.avatar)}</div>
+              <div class="senior-info">
+                <div class="senior-name">${escapeHtml(s.name)}</div>
+                <div class="senior-role">${escapeHtml(s.role || 'Senior Manager')} · +${escapeHtml(s.phone)} · ${(LANGUAGE_OPTIONS[s.language || 'hinglish_80']||{}).short || ''}</div>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="openEditSeniorModal('${id}')">Edit</button>
+              <div class="senior-toggle ${s.enabled ? 'on' : ''}" onclick="toggleSenior('${id}')"></div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="settings-fields">
+          <div class="field-row">
+            <label class="field-label">Escalation window (hours)</label>
+            <input class="field-input" type="number" value="${settings.senior_layer.escalation_window_hours}" onchange="updateSetting('senior_layer.escalation_window_hours', parseInt(this.value))">
+          </div>
+          <div class="field-row" style="align-items: flex-start;">
+            <label class="field-label">Routing logic</label>
+            <div style="background: var(--bg-2); border: 1px solid var(--separator); border-radius: 8px; padding: 12px 14px; font-size: 12.5px; line-height: 1.55; color: var(--text-2); width: 100%;">
+              Each rep is tagged with a <strong style="color: var(--text);">Reports to</strong> senior in the Sales Team section above. When AI escalates an issue, it forwards directly to <em>that rep's senior manager</em> — not by region. ${(() => {
+                const counts = {};
+                Object.values(settings.team).forEach(r => {
+                  const sid = r.reports_to || '_none';
+                  counts[sid] = (counts[sid] || 0) + 1;
+                });
+                return Object.entries(counts).map(([sid, n]) => {
+                  if (sid === '_none') return `<br>· <strong style="color: var(--text-3);">${n}</strong> rep${n>1?'s':''} not assigned to any senior (escalates directly to you)`;
+                  const s = settings.seniors[sid];
+                  if (!s) return '';
+                  return `<br>· <strong style="color: ${s.color};">${escapeHtml(s.name)}</strong> manages ${n} rep${n>1?'s':''}`;
+                }).join('');
+              })()}
+            </div>
+          </div>
+        </div>
+        <div class="settings-actions">
+          <button class="btn btn-secondary btn-sm" onclick="openAddSeniorModal()">+ Add senior manager</button>
+          <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save</button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-head">
+          <div class="sg-icon" style="background: var(--red-soft); color: var(--red);">!</div>
+          <div class="sg-info">
+            <div class="sg-title">Escalation Rules</div>
+            <div class="sg-desc">When AI auto-escalates instead of handling autonomously</div>
+          </div>
+          <span class="sg-status connected">● Active</span>
+        </div>
+        <div class="settings-fields">
+          <div class="field-row">
+            <label class="field-label">Pricing discount threshold (%)</label>
+            <input class="field-input" type="number" value="${settings.escalation_rules.pricing_threshold_pct}" onchange="updateSetting('escalation_rules.pricing_threshold_pct', parseInt(this.value))">
+          </div>
+          <div class="field-row">
+            <label class="field-label">Key account LTV (₹)</label>
+            <input class="field-input" type="number" value="${settings.escalation_rules.key_account_ltv}" onchange="updateSetting('escalation_rules.key_account_ltv', parseInt(this.value))">
+          </div>
+          <div class="field-row">
+            <label class="field-label">AI confidence floor (%)</label>
+            <input class="field-input" type="number" value="${settings.escalation_rules.ai_confidence_threshold}" onchange="updateSetting('escalation_rules.ai_confidence_threshold', parseInt(this.value))">
+          </div>
+          <div class="field-row">
+            <label class="field-label">Max nudges before escalate</label>
+            <input class="field-input" type="number" value="${settings.escalation_rules.max_unresponsive_nudges}" onchange="updateSetting('escalation_rules.max_unresponsive_nudges', parseInt(this.value))">
+          </div>
+        </div>
+        <div class="settings-actions">
+          <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderTeamRow(rid, r) {
+    const intensity = r.intensity || 'standard';
+    const language = r.language || 'hinglish_80';
+    const intInfo = INTENSITY_OPTIONS[intensity];
+    const langInfo = LANGUAGE_OPTIONS[language];
+    const reportsTo = r.reports_to ? settings.seniors[r.reports_to] : null;
+    return `
+      <div class="team-row">
+        <div class="team-row-head">
+          <div class="ac-avatar" style="background: ${r.color}22; color: ${r.color}; width: 38px; height: 38px; font-size: 13px;">${escapeHtml(r.avatar || r.name.substring(0,2).toUpperCase())}</div>
+          <div class="team-row-info">
+            <div class="team-row-name">${escapeHtml(r.name)}</div>
+            <div class="team-row-meta">EMP ${escapeHtml(r.emp_code || '—')} · ${escapeHtml(r.region || '—')} · ${escapeHtml(r.role || 'Sales Person')}${reportsTo ? ' · reports to <strong style="color:' + reportsTo.color + ';">' + escapeHtml(reportsTo.name.split(' ')[0]) + '</strong>' : ' · <span style="color: var(--text-4);">no senior assigned</span>'}</div>
+          </div>
+          <div class="team-row-pills">
+            <span class="pill" style="background:${intInfo.color}1A; color:${intInfo.color};"><span class="dot" style="background:${intInfo.color};"></span> ${intInfo.label}</span>
+            <span class="pill ai">${langInfo.short}</span>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="toggleTeamRowExpanded('${rid}')">Edit</button>
+        </div>
+        <div class="team-row-body" id="team_body_${rid}" style="display:none;">
+          <div class="field-row">
+            <label class="field-label">Full name <span class="req">*</span></label>
+            <input class="field-input" type="text" value="${escapeHtml(r.name)}" onchange="updateTeamField('${rid}','name', this.value)">
+          </div>
+          <div class="field-row">
+            <label class="field-label">WhatsApp number <span class="req">*</span></label>
+            <input class="field-input mono" type="tel" value="${escapeHtml(r.phone)}" placeholder="91XXXXXXXXXX (with country code, no +)" onchange="updateTeamField('${rid}','phone', this.value)">
+          </div>
+          <div class="field-row">
+            <label class="field-label">Employee code</label>
+            <input class="field-input mono" type="text" value="${escapeHtml(r.emp_code || '')}" onchange="updateTeamField('${rid}','emp_code', this.value)">
+          </div>
+          <div class="field-row">
+            <label class="field-label">Region</label>
+            <input class="field-input" type="text" value="${escapeHtml(r.region || '')}" onchange="updateTeamField('${rid}','region', this.value)">
+          </div>
+          <div class="field-row">
+            <label class="field-label">Role</label>
+            <input class="field-input" type="text" value="${escapeHtml(r.role || 'Sales Person')}" onchange="updateTeamField('${rid}','role', this.value)">
+          </div>
+          <div class="field-row">
+            <label class="field-label">Reports to</label>
+            <select class="field-input" onchange="updateTeamField('${rid}','reports_to', this.value); render();">
+              <option value="" ${!r.reports_to ? 'selected' : ''}>— None / direct to Mukul —</option>
+              ${Object.entries(settings.seniors).map(([sid, s]) => `<option value="${sid}" ${r.reports_to === sid ? 'selected' : ''}>${escapeHtml(s.name)} · ${escapeHtml(s.role || 'Senior Manager')}</option>`).join('')}
+            </select>
+          </div>
+          <div class="field-row">
+            <label class="field-label">Communication intensity</label>
+            <div class="seg-options">
+              ${Object.entries(INTENSITY_OPTIONS).map(([k, v]) => `
+                <button class="seg-opt ${intensity === k ? 'active' : ''}" onclick="updateTeamField('${rid}','intensity','${k}'); render();" title="${v.desc}">
+                  <span style="display:block; font-weight:600;">${v.label}</span>
+                  <span style="display:block; font-size:10.5px; color: var(--text-3); margin-top:2px; font-weight:400;">${v.desc}</span>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+          <div class="field-row">
+            <label class="field-label">Language tone</label>
+            <div class="seg-options">
+              ${Object.entries(LANGUAGE_OPTIONS).map(([k, v]) => `
+                <button class="seg-opt ${language === k ? 'active' : ''}" onclick="updateTeamField('${rid}','language','${k}'); render();" title="${v.desc}">
+                  <span style="display:block; font-weight:600;">${v.label}</span>
+                  <span style="display:block; font-size:10.5px; color: var(--text-3); margin-top:2px; font-weight:400;">${v.desc}</span>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+          <div class="field-row">
+            <label class="field-label"></label>
+            <div style="display:flex; gap:8px;">
+              <a class="btn btn-secondary btn-sm" href="https://wa.me/${escapeHtml(r.phone)}" target="_blank" rel="noopener">Open WhatsApp</a>
+              <button class="btn btn-tinted-red btn-sm" onclick="removeTeamMember('${rid}')">Remove from team</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function toggleTeamRowExpanded(rid) {
+    const el = document.getElementById('team_body_' + rid);
+    if (!el) return;
+    el.style.display = el.style.display === 'none' ? 'flex' : 'none';
+  }
+
+  function updateTeamField(rid, field, value) {
+    if (!settings.team[rid]) return;
+    settings.team[rid][field] = value;
+    saveData();
+  }
+
+  // ============================================================
+  // MODAL INFRASTRUCTURE
+  // ============================================================
+  const COLOR_PALETTE = ['#34C759', '#007AFF', '#FF9500', '#AF52DE', '#5AC8FA', '#FF3B30', '#5856D6', '#FF2D55', '#FFCC00', '#30D158'];
+
+  function openModal(html) {
+    document.getElementById('modal').innerHTML = html;
+    document.getElementById('modalBackdrop').classList.add('show');
+  }
+  function closeModal() {
+    document.getElementById('modalBackdrop').classList.remove('show');
+  }
+  function closeModalFromBackdrop(e) {
+    if (e.target.id === 'modalBackdrop') closeModal();
+  }
+
+  function pickColor(target, color) {
+    document.querySelectorAll(`#modal .color-dot`).forEach(d => d.classList.remove('active'));
+    document.querySelector(`#modal .color-dot[data-color="${color}"]`)?.classList.add('active');
+    document.getElementById(target).value = color;
+  }
+
+  // ============================================================
+  // ADD TEAM MEMBER MODAL
+  // ============================================================
+  function openAddTeamMemberModal() {
+    const defaultColor = COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)];
+    openModal(`
+      <div class="modal-head">
+        <div class="modal-title">Add team member</div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="field-row">
+          <label class="field-label">Full name <span class="req">*</span></label>
+          <input class="field-input" type="text" id="m_tm_name" placeholder="e.g. Anjali Mehta" />
+        </div>
+        <div class="field-row">
+          <label class="field-label">WhatsApp number <span class="req">*</span></label>
+          <input class="field-input mono" type="tel" id="m_tm_phone" placeholder="91XXXXXXXXXX (with country code)" />
+        </div>
+        <div class="field-row">
+          <label class="field-label">Employee code</label>
+          <input class="field-input mono" type="text" id="m_tm_emp" placeholder="e.g. 1820" />
+        </div>
+        <div class="field-row">
+          <label class="field-label">Region</label>
+          <input class="field-input" type="text" id="m_tm_region" placeholder="e.g. Gujarat / South India" />
+        </div>
+        <div class="field-row">
+          <label class="field-label">Role</label>
+          <input class="field-input" type="text" id="m_tm_role" value="Sales Person" />
+        </div>
+        <div class="field-row">
+          <label class="field-label">Avatar colour</label>
+          <div class="color-picker">
+            ${COLOR_PALETTE.map(c => `<div class="color-dot ${c === defaultColor ? 'active' : ''}" data-color="${c}" style="background:${c};" onclick="pickColor('m_tm_color','${c}')"></div>`).join('')}
+            <input type="hidden" id="m_tm_color" value="${defaultColor}">
+          </div>
+        </div>
+        <div class="field-row">
+          <label class="field-label">Reports to (senior manager)</label>
+          <select class="field-input" id="m_tm_reports_to">
+            <option value="">— None / direct to Mukul —</option>
+            ${Object.entries(settings.seniors).map(([sid, s]) => `<option value="${sid}">${escapeHtml(s.name)} · ${escapeHtml(s.role || 'Senior Manager')}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field-row">
+          <label class="field-label">Communication intensity</label>
+          <select class="field-input" id="m_tm_intensity">
+            ${Object.entries(INTENSITY_OPTIONS).map(([k,v]) => `<option value="${k}" ${k === 'standard' ? 'selected' : ''}>${v.label} — ${v.desc}</option>`).join('')}
+          </select>
+        </div>
+        <div class="field-row">
+          <label class="field-label">Language tone</label>
+          <select class="field-input" id="m_tm_language">
+            ${Object.entries(LANGUAGE_OPTIONS).map(([k,v]) => `<option value="${k}" ${k === 'hinglish_80' ? 'selected' : ''}>${v.label}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary btn-sm" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="submitAddTeamMember()">Add to team</button>
+      </div>
+    `);
+  }
+
+  async function submitAddTeamMember() {
+    const name = document.getElementById('m_tm_name').value.trim();
+    const phone = document.getElementById('m_tm_phone').value.trim();
+    if (!name || !phone) { alert('Name and WhatsApp number are required.'); return; }
+
+    const newId = 'r' + Date.now();
+    const initials = name.split(' ').map(p => p[0]).join('').substring(0,2).toUpperCase();
+    settings.team[newId] = {
+      name, phone,
+      emp_code: document.getElementById('m_tm_emp').value.trim(),
+      region: document.getElementById('m_tm_region').value.trim(),
+      role: document.getElementById('m_tm_role').value.trim() || 'Sales Person',
+      avatar: initials,
+      color: document.getElementById('m_tm_color').value,
+      reports_to: document.getElementById('m_tm_reports_to').value,
+      intensity: document.getElementById('m_tm_intensity').value,
+      language: document.getElementById('m_tm_language').value
+    };
+    await saveData();
+    closeModal();
+    render();
+  }
+
+  // ============================================================
+  // ADD SENIOR MANAGER MODAL
+  // ============================================================
+  function openAddSeniorModal() {
+    const defaultColor = COLOR_PALETTE[Math.floor(Math.random() * COLOR_PALETTE.length)];
+    openModal(`
+      <div class="modal-head">
+        <div class="modal-title">Add senior manager</div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="field-row">
+          <label class="field-label">Full name <span class="req">*</span></label>
+          <input class="field-input" type="text" id="m_sr_name" placeholder="e.g. Rajesh Khanna" />
+        </div>
+        <div class="field-row">
+          <label class="field-label">WhatsApp number <span class="req">*</span></label>
+          <input class="field-input mono" type="tel" id="m_sr_phone" placeholder="91XXXXXXXXXX" />
+        </div>
+        <div class="field-row">
+          <label class="field-label">Role / title</label>
+          <input class="field-input" type="text" id="m_sr_role" placeholder="e.g. Senior Sales Manager · East" />
+        </div>
+        <div class="field-row">
+          <label class="field-label">Region of authority</label>
+          <input class="field-input" type="text" id="m_sr_region" placeholder="e.g. East India" />
+        </div>
+        <div class="field-row">
+          <label class="field-label">Avatar colour</label>
+          <div class="color-picker">
+            ${COLOR_PALETTE.map(c => `<div class="color-dot ${c === defaultColor ? 'active' : ''}" data-color="${c}" style="background:${c};" onclick="pickColor('m_sr_color','${c}')"></div>`).join('')}
+            <input type="hidden" id="m_sr_color" value="${defaultColor}">
+          </div>
+        </div>
+        <div class="field-row">
+          <label class="field-label">Language tone</label>
+          <select class="field-input" id="m_sr_language">
+            ${Object.entries(LANGUAGE_OPTIONS).map(([k,v]) => `<option value="${k}" ${k === 'hinglish_80' ? 'selected' : ''}>${v.label}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-secondary btn-sm" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="submitAddSenior()">Add senior manager</button>
+      </div>
+    `);
+  }
+
+  async function submitAddSenior() {
+    const name = document.getElementById('m_sr_name').value.trim();
+    const phone = document.getElementById('m_sr_phone').value.trim();
+    if (!name || !phone) { alert('Name and WhatsApp number are required.'); return; }
+
+    const slug = name.toLowerCase().split(/\s+/)[0].replace(/[^a-z]/g,'') || ('s' + Date.now());
+    let id = slug;
+    let i = 1;
+    while (settings.seniors[id]) { id = slug + (++i); }
+
+    const initials = name.split(' ').map(p => p[0]).join('').substring(0,2).toUpperCase();
+    settings.seniors[id] = {
+      name,
+      phone,
+      role: document.getElementById('m_sr_role').value.trim() || 'Senior Manager',
+      region: document.getElementById('m_sr_region').value.trim(),
+      avatar: initials,
+      color: document.getElementById('m_sr_color').value,
+      language: document.getElementById('m_sr_language').value,
+      enabled: true
+    };
+    await saveData();
+    closeModal();
+    render();
+  }
+
+  async function removeSenior(sid) {
+    const s = settings.seniors[sid];
+    if (!s) return;
+    if (!confirm(`Remove ${s.name} from the senior layer? Existing forwarded threads will remain visible.`)) return;
+    delete settings.seniors[sid];
+    // Update auto-route settings if they pointed to this senior
+    if (settings.senior_layer.auto_route_north_to === sid) settings.senior_layer.auto_route_north_to = '';
+    if (settings.senior_layer.auto_route_other_to === sid) settings.senior_layer.auto_route_other_to = '';
+    await saveData();
+    render();
+  }
+
+  function openEditSeniorModal(sid) {
+    const s = settings.seniors[sid];
+    if (!s) return;
+    openModal(`
+      <div class="modal-head">
+        <div class="modal-title">Edit ${escapeHtml(s.name)}</div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="field-row">
+          <label class="field-label">Full name <span class="req">*</span></label>
+          <input class="field-input" type="text" id="m_sr_name" value="${escapeHtml(s.name)}" />
+        </div>
+        <div class="field-row">
+          <label class="field-label">WhatsApp number <span class="req">*</span></label>
+          <input class="field-input mono" type="tel" id="m_sr_phone" value="${escapeHtml(s.phone)}" />
+        </div>
+        <div class="field-row">
+          <label class="field-label">Role / title</label>
+          <input class="field-input" type="text" id="m_sr_role" value="${escapeHtml(s.role || '')}" />
+        </div>
+        <div class="field-row">
+          <label class="field-label">Region</label>
+          <input class="field-input" type="text" id="m_sr_region" value="${escapeHtml(s.region || '')}" />
+        </div>
+        <div class="field-row">
+          <label class="field-label">Avatar colour</label>
+          <div class="color-picker">
+            ${COLOR_PALETTE.map(c => `<div class="color-dot ${c === s.color ? 'active' : ''}" data-color="${c}" style="background:${c};" onclick="pickColor('m_sr_color','${c}')"></div>`).join('')}
+            <input type="hidden" id="m_sr_color" value="${s.color}">
+          </div>
+        </div>
+        <div class="field-row">
+          <label class="field-label">Language tone</label>
+          <select class="field-input" id="m_sr_language">
+            ${Object.entries(LANGUAGE_OPTIONS).map(([k,v]) => `<option value="${k}" ${k === s.language ? 'selected' : ''}>${v.label}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-tinted-red btn-sm" onclick="removeSenior('${sid}'); closeModal();">Remove</button>
+        <div style="flex:1;"></div>
+        <button class="btn btn-secondary btn-sm" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="submitEditSenior('${sid}')">Save changes</button>
+      </div>
+    `);
+  }
+
+  async function submitEditSenior(sid) {
+    const s = settings.seniors[sid];
+    if (!s) return;
+    s.name = document.getElementById('m_sr_name').value.trim() || s.name;
+    s.phone = document.getElementById('m_sr_phone').value.trim() || s.phone;
+    s.role = document.getElementById('m_sr_role').value.trim();
+    s.region = document.getElementById('m_sr_region').value.trim();
+    s.color = document.getElementById('m_sr_color').value;
+    s.language = document.getElementById('m_sr_language').value;
+    s.avatar = s.name.split(' ').map(p => p[0]).join('').substring(0,2).toUpperCase();
+    await saveData();
+    closeModal();
+    render();
+  }
+
+  // OLD addTeamMember replaced — keep for backwards compat
+  async function addTeamMember() { openAddTeamMemberModal(); }
+
+  async function removeTeamMember(rid) {
+    const r = settings.team[rid];
+    if (!r) return;
+    if (!confirm(`Remove ${r.name} from the team? Their existing conversations will remain visible but no new AI nudges will be sent.`)) return;
+    delete settings.team[rid];
+    await saveData();
+    render();
+  }
+
+  function updateSetting(path, value) {
+    const parts = path.split('.');
+    let obj = settings;
+    for (let i = 0; i < parts.length - 1; i++) obj = obj[parts[i]];
+    obj[parts[parts.length - 1]] = value;
+  }
+  async function saveSettings() {
+    await saveData();
+    alert('Settings saved.');
+  }
+  async function toggleSenior(id) {
+    if (settings.seniors[id]) {
+      settings.seniors[id].enabled = !settings.seniors[id].enabled;
+      await saveData();
+      render();
+    }
+  }
+  function testConnection(name) {
+    alert(`Test connection to ${name}\n\nIn production, this would ping the API endpoint and verify credentials. For the demo, no live test is performed.`);
+  }
+
+  // ============================================================
+  // CRM SYNC FUNCTIONS
+  // ============================================================
+  async function loadCRMSyncStatus() {
+    try {
+      const response = await fetch('/api/crm/sync-status');
+      if (!response.ok) throw new Error('Failed to load sync status');
+      
+      const data = await response.json();
+      const syncData = data.data || {};
+      
+      // Update status badge
+      const statusEl = document.getElementById('crmSyncStatus');
+      if (statusEl) {
+        const lastSync = syncData.last_sync;
+        if (lastSync) {
+          const syncDate = new Date(lastSync);
+          const now = new Date();
+          const diffMinutes = Math.floor((now - syncDate) / 1000 / 60);
+          
+          let timeAgo = '';
+          if (diffMinutes < 1) timeAgo = 'Just now';
+          else if (diffMinutes < 60) timeAgo = `${diffMinutes}m ago`;
+          else if (diffMinutes < 1440) timeAgo = `${Math.floor(diffMinutes / 60)}h ago`;
+          else timeAgo = `${Math.floor(diffMinutes / 1440)}d ago`;
+          
+          statusEl.textContent = `● Last sync: ${timeAgo}`;
+          statusEl.className = 'sg-status connected';
+        } else {
+          statusEl.textContent = 'Never synced';
+          statusEl.className = 'sg-status disconnected';
+        }
+      }
+      
+      // Update details section
+      const detailsEl = document.getElementById('crmSyncDetails');
+      if (detailsEl) {
+        const lastSyncFormatted = syncData.last_sync 
+          ? new Date(syncData.last_sync).toLocaleString('en-IN', {
+              dateStyle: 'medium',
+              timeStyle: 'short'
+            })
+          : 'Never';
+        
+        detailsEl.innerHTML = `
+          <div class="field-row">
+            <label class="field-label">Last Sync Time</label>
+            <div class="field-value mono">${lastSyncFormatted}</div>
+          </div>
+          <div class="field-row">
+            <label class="field-label">Total Comments</label>
+            <div class="field-value"><strong>${syncData.total_count || 0}</strong> comments in database</div>
+          </div>
+          <div class="field-row">
+            <label class="field-label">Processed</label>
+            <div class="field-value"><strong style="color: var(--green);">${syncData.processed_count || 0}</strong> comments processed</div>
+          </div>
+          <div class="field-row">
+            <label class="field-label">Pending</label>
+            <div class="field-value"><strong style="color: var(--orange);">${syncData.pending_count || 0}</strong> comments pending</div>
+          </div>
+          <div class="field-row">
+            <label class="field-label">Auto-Sync Interval</label>
+            <div class="field-value">Every <strong>60 minutes</strong></div>
+          </div>
+        `;
+      }
+    } catch (error) {
+      console.error('Failed to load CRM sync status:', error);
+      const detailsEl = document.getElementById('crmSyncDetails');
+      if (detailsEl) {
+        detailsEl.innerHTML = `
+          <div style="text-align: center; padding: 20px; color: var(--red);">
+            ⚠ Failed to load sync status
+          </div>
+        `;
+      }
+    }
+  }
+
+  async function manualCRMSync() {
+    const btn = document.getElementById('btnManualSync');
+    if (!btn) return;
+    
+    const originalHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loader"></span> Syncing...';
+    
+    try {
+      const response = await fetch('/api/crm/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(error);
+      }
+      
+      const result = await response.json();
+      const newComments = result.data?.new_comments || 0;
+      
+      alert(`✅ Sync completed!\n\n${newComments} new comments fetched from CRM.`);
+      
+      // Reload sync status
+      await loadCRMSyncStatus();
+      
+      // Reload conversations to show new data
+      await loadData();
+      render();
+      
+    } catch (error) {
+      console.error('Sync failed:', error);
+      alert(`❌ Sync failed:\n\n${error.message}`);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalHTML;
+    }
+  }
+
+  // ============================================================
+  // TAB MANAGEMENT
+  // ============================================================
+  function render() {
+    document.querySelectorAll('.seg-btn').forEach(t => {
+      t.classList.toggle('active', t.dataset.tab === activeTab);
+    });
+    ['Dash', 'Inbox', 'CC', 'Settings'].forEach(v => {
+      const id = v === 'Dash' ? 'viewDash' : v === 'CC' ? 'viewCC' : 'view' + v;
+      const tabId = v === 'Dash' ? 'dash' : v === 'CC' ? 'cc' : v.toLowerCase();
+      document.getElementById(id).classList.toggle('active', activeTab === tabId);
+    });
+
+    const ccItems = conversations.filter(c => c.handler === 'escalated' || c.handler === 'approval').length;
+    const ccBadge = document.getElementById('ccBadge');
+    ccBadge.textContent = ccItems;
+    ccBadge.style.display = ccItems > 0 ? 'inline-flex' : 'none';
+
+    if (activeTab === 'dash') renderDashboard();
+    else if (activeTab === 'inbox') { renderSidebar(); renderChatPane(); }
+    else if (activeTab === 'cc') renderCommandCentre();
+    else if (activeTab === 'settings') {
+      renderSettings();
+      // Load CRM sync status after rendering
+      setTimeout(() => loadCRMSyncStatus(), 100);
+    }
+  }
+
+  (async function init() {
+    await loadData();
+    if (conversations.length > 0) activeConvId = conversations[0].id;
+    render();
+  })();
+</script>
+</body>
+</html>
