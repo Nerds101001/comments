@@ -44,8 +44,35 @@ async def lifespan(app: FastAPI):
     await init_db()
     await _seed_if_empty()
     _start_scheduler()
+    # Run initial sync on startup
+    await _run_initial_sync()
     yield
     logger.info("Shutting down…")
+
+
+async def _run_initial_sync():
+    """Run an initial CRM sync on startup to catch up on any missed data."""
+    try:
+        logger.info("Running initial CRM sync on startup...")
+        async with AsyncSessionLocal() as db:
+            from app.api import crm as crm_api
+            from app.api import checkin as checkin_api
+            
+            # Sync comments (last 2 hours to catch up)
+            result = await crm_api.sync_crm_comments(hours_back=2, emp_code=None, db=db)
+            new_comments = result.data.get("new_comments", 0) if result.data else 0
+            
+            # Sync check-ins (last 1 day)
+            checkin_result = await checkin_api.sync_checkin_data(days=1, db=db)
+            new_checkins = checkin_result.data.get("total_new", 0) if checkin_result.data else 0
+            
+            logger.info(f"Initial sync completed: {new_comments} new comments, {new_checkins} new check-ins")
+            
+            # Process new comments
+            if new_comments > 0:
+                await crm_api.process_all_pending(db=db)
+    except Exception as exc:
+        logger.warning(f"Initial sync failed (will retry on schedule): {exc}")
 
 
 async def _seed_if_empty():
@@ -235,12 +262,23 @@ def _start_scheduler():
         async def _poll_crm():
             async with AsyncSessionLocal() as db:
                 from app.api import crm as crm_api
+                from app.api import checkin as checkin_api
                 # We call the sync endpoint logic directly
                 from fastapi import Request
                 logger.info("CRM auto-poll: starting sync…")
                 try:
+                    # Sync comments
                     result = await crm_api.sync_crm_comments(hours_back=1, emp_code=None, db=db)
-                    if result.data and result.data.get("new_comments", 0) > 0:
+                    new_comments = result.data.get("new_comments", 0) if result.data else 0
+                    
+                    # Sync check-ins
+                    checkin_result = await checkin_api.sync_checkin_data(days=1, db=db)
+                    new_checkins = checkin_result.data.get("total_new", 0) if checkin_result.data else 0
+                    
+                    logger.info(f"CRM auto-sync completed: {new_comments} new comments, {new_checkins} new check-ins")
+                    
+                    # Process new comments
+                    if new_comments > 0:
                         await crm_api.process_all_pending(db=db)
                 except Exception as exc:
                     logger.error("CRM poll error: %s", exc)
