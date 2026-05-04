@@ -88,74 +88,77 @@ async def fetch_checkin_data_from_crm(
         return []
 
 
-async def sync_checkin_data(db: AsyncSession, days: int = 90) -> Dict:
+async def sync_checkin_data(db: AsyncSession, days: int = 182) -> Dict:
     """
-    Sync check-in data from CRM for all active reps.
-    
+    Sync check-in data from CRM for all reps (admin fetch — no emp_code filter).
+
     Args:
         db: Database session
-        days: Number of days to sync (default 90)
-    
+        days: Number of days to sync (default 182 = 6 months)
+
     Returns:
         Summary of sync operation
     """
+    from app.services import crm_client
+
     today = datetime.now()
-    from_date = (today - timedelta(days=days)).strftime("%Y-%m-%d")  # YYYY-MM-DD format
+    from_date = (today - timedelta(days=days)).strftime("%Y-%m-%d")
     to_date = today.strftime("%Y-%m-%d")
-    
-    # Fetch ALL check-in data (no emp_code filter)
-    logger.info(f"Fetching ALL check-in data from {from_date} to {to_date}")
-    checkins = await fetch_checkin_data_from_crm(None, from_date, to_date)
-    
+
+    logger.info("Fetching ALL check-in data from %s to %s", from_date, to_date)
+    checkins = await crm_client.get_checkin_data(
+        emp_code=None, from_date=from_date, to_date=to_date
+    )
+
     total_fetched = len(checkins)
     total_new = 0
     total_updated = 0
     errors = []
-    
-    logger.info(f"Fetched {total_fetched} check-in records from CRM")
-    
-    for checkin_data in checkins:
+
+    logger.info("Fetched %d check-in records from CRM", total_fetched)
+
+    BATCH = 500
+    for idx, checkin_data in enumerate(checkins):
         try:
-            # Extract fields from CRM response
             emp_code = str(checkin_data.get("EmpCode") or checkin_data.get("empCode") or "")
+            if not emp_code or emp_code == "0":
+                continue
+
             emp_name = checkin_data.get("EMP_NAME") or checkin_data.get("empName") or ""
-            comp_code = str(checkin_data.get("CompCode") or checkin_data.get("compCode") or "")
-            comp_name = checkin_data.get("COMP_NAME") or checkin_data.get("compName") or ""
-            
-            # Parse date from CreatedonApp or Createdon
-            created_on_app = checkin_data.get("CreatedonApp") or checkin_data.get("createdonApp")
-            created_on = checkin_data.get("Createdon") or checkin_data.get("createdon")
-            
-            # Parse datetime
-            if created_on_app:
-                dt = datetime.fromisoformat(created_on_app.replace('Z', '+00:00'))
-            elif created_on:
-                dt = datetime.fromisoformat(created_on.replace('Z', '+00:00'))
-            else:
-                continue  # Skip if no date
-            
+            comp_code_raw = checkin_data.get("CompCode") or checkin_data.get("compCode") or ""
+            comp_code = str(comp_code_raw) if str(comp_code_raw) not in ("0", "") else None
+            comp_name = checkin_data.get("COMP_NAME") or checkin_data.get("compName") or None
+
+            # CreatedonApp is the actual check-in time; Createdon is server-received time
+            ts_str = (
+                checkin_data.get("CreatedonApp") or checkin_data.get("createdonApp") or
+                checkin_data.get("Createdon") or checkin_data.get("createdon")
+            )
+            if not ts_str:
+                continue
+            dt = datetime.fromisoformat(ts_str.replace("Z", "+00:00").replace("+00:00+00:00", "+00:00"))
             checkin_date = dt.strftime("%d-%m-%Y")
             checkin_time = dt.strftime("%H:%M:%S")
-            
+
             latitude = checkin_data.get("Latitude") or checkin_data.get("latitude")
             longitude = checkin_data.get("Longitude") or checkin_data.get("longitude")
-            location = checkin_data.get("Location") or checkin_data.get("location") or ""
-            address = checkin_data.get("CompAddress") or checkin_data.get("compAddress") or location
-            
-            # Check if record exists
+            address = (
+                checkin_data.get("CompAddress") or checkin_data.get("compAddress") or
+                checkin_data.get("Location") or checkin_data.get("location") or None
+            )
+
             existing = await db.execute(
                 select(CheckIn).where(
                     and_(
                         CheckIn.emp_code == emp_code,
                         CheckIn.checkin_date == checkin_date,
-                        CheckIn.checkin_time == checkin_time
+                        CheckIn.checkin_time == checkin_time,
                     )
                 )
             )
             existing_record = existing.scalar_one_or_none()
-            
+
             if existing_record:
-                # Update existing record
                 existing_record.comp_code = comp_code
                 existing_record.comp_name = comp_name
                 existing_record.latitude = str(latitude) if latitude else None
@@ -164,29 +167,31 @@ async def sync_checkin_data(db: AsyncSession, days: int = 90) -> Dict:
                 existing_record.updated_at = datetime.utcnow()
                 total_updated += 1
             else:
-                # Create new record
-                new_checkin = CheckIn(
+                db.add(CheckIn(
                     emp_code=emp_code,
                     emp_name=emp_name,
-                    comp_code=comp_code if comp_code != "0" else None,
-                    comp_name=comp_name if comp_name else None,
+                    comp_code=comp_code,
+                    comp_name=comp_name,
                     checkin_date=checkin_date,
                     checkin_time=checkin_time,
-                    checkout_time=None,  # Not provided in this endpoint
-                    duration_minutes=None,  # Not provided
+                    checkout_time=None,
+                    duration_minutes=None,
                     latitude=str(latitude) if latitude else None,
                     longitude=str(longitude) if longitude else None,
                     address=address,
                     remarks=None,
-                )
-                db.add(new_checkin)
+                ))
                 total_new += 1
-        
+
         except Exception as e:
-            error_msg = f"Error processing check-in record: {str(e)}"
-            logger.error(error_msg)
-            errors.append(error_msg)
-    
+            errors.append(str(e))
+            logger.error("Error processing check-in record: %s", e)
+
+        # Commit in batches to avoid memory issues with large syncs
+        if (idx + 1) % BATCH == 0:
+            await db.commit()
+            logger.info("Check-in batch committed: %d processed so far", idx + 1)
+
     await db.commit()
     
     return {
