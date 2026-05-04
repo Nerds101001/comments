@@ -29,6 +29,10 @@ class Settings(BaseSettings):
     META_APP_ID: Optional[str] = None
     META_SYSTEM_USER_ID: Optional[str] = None
 
+    # ── AiSensy WhatsApp API ─────────────────
+    AISENSY_API_KEY: str = ""
+    AISENSY_USERNAME: str = "Hi Tech Group 8161"
+
     # ── CRM (rustx.net) ──────────────────────
     CRM_BASE_URL: str = "https://api-crm.rustx.net"
     CRM_TOKEN: str = ""

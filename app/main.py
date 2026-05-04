@@ -43,12 +43,35 @@ async def lifespan(app: FastAPI):
     logger.info("Hi-Tech AI Sales Org starting…")
     await init_db()
     await _seed_if_empty()
+    await _load_db_settings()
     _start_scheduler()
     # Run initial sync in background (don't block startup)
     import asyncio
     asyncio.create_task(_run_initial_sync())
     yield
     logger.info("Shutting down…")
+
+
+async def _load_db_settings():
+    """Load persisted settings (AiSensy key, etc.) from DB into runtime config."""
+    from sqlalchemy import select as sa_select
+    from app.models import AppSetting
+    from app.config import settings as app_settings
+    try:
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                sa_select(AppSetting).where(
+                    AppSetting.key.in_(["aisensy_api_key", "aisensy_username"])
+                )
+            )
+            rows = {r.key: r.value for r in result.scalars().all()}
+            if rows.get("aisensy_api_key"):
+                app_settings.AISENSY_API_KEY = rows["aisensy_api_key"]
+                logger.info("AiSensy API key loaded from database")
+            if rows.get("aisensy_username"):
+                app_settings.AISENSY_USERNAME = rows["aisensy_username"]
+    except Exception as exc:
+        logger.warning("Could not load DB settings: %s", exc)
 
 
 async def _run_initial_sync():

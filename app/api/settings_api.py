@@ -13,7 +13,7 @@ from app.database import get_db
 from app.models import Rep, Senior, AppSetting
 from app.schemas import RepOut, RepCreate, SeniorOut, SeniorCreate, SettingsOut, StatusResponse
 from app.config import settings
-from app.services import crm_client, whatsapp_api
+from app.services import crm_client, whatsapp_api, aisensy_client
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
@@ -53,6 +53,11 @@ async def get_settings(db: AsyncSession = Depends(get_db)):
                 "connected": bool(settings.WHATSAPP_PHONE_NUMBER_ID and settings.WHATSAPP_ACCESS_TOKEN),
                 "phone_number_id": settings.WHATSAPP_PHONE_NUMBER_ID,
                 "verify_token": settings.WHATSAPP_VERIFY_TOKEN,
+            },
+            "aisensy": {
+                "connected": bool(settings.AISENSY_API_KEY),
+                "api_key_preview": (settings.AISENSY_API_KEY[:20] + "...") if settings.AISENSY_API_KEY else "",
+                "username": settings.AISENSY_USERNAME,
             },
             "crm": {
                 "connected": bool(settings.CRM_USERNAME and settings.CRM_PASSWORD),
@@ -181,69 +186,82 @@ async def test_integration(integration: str, db: AsyncSession = Depends(get_db))
             import ssl
             from email.mime.text import MIMEText
             from email.mime.multipart import MIMEMultipart
-            
-            # Create test email
+
             msg = MIMEMultipart()
             msg['From'] = f"{smtp_from_name} <{smtp_from_address}>"
-            msg['To'] = "csenerds@gmail.com"
+            msg['To'] = smtp_user
             msg['Subject'] = "Hi-Tech AI Sales - SMTP Test Email"
-            
-            body = """
-            <html>
-            <body style="font-family: Arial, sans-serif; padding: 20px;">
-                <h2 style="color: #007AFF;">✅ SMTP Connection Successful!</h2>
-                <p>This is a test email from your Hi-Tech AI Sales system.</p>
-                <p><strong>SMTP Configuration:</strong></p>
-                <ul>
-                    <li>Host: {host}</li>
-                    <li>Port: {port}</li>
-                    <li>User: {user}</li>
-                </ul>
-                <p style="color: #34C759; font-weight: bold;">Your email system is working correctly!</p>
-                <hr style="border: 1px solid #E5E5EA; margin: 20px 0;">
-                <p style="color: #86868B; font-size: 12px;">Sent from Hi-Tech AI Sales Org</p>
-            </body>
-            </html>
-            """.format(host=smtp_host, port=smtp_port, user=smtp_user)
-            
-            msg.attach(MIMEText(body, 'html'))
-            
-            # Try different connection methods
-            try:
-                # Method 1: STARTTLS (port 587)
-                if smtp_port == 587:
-                    server = smtplib.SMTP(smtp_host, smtp_port, timeout=15)
-                    server.ehlo()
-                    server.starttls()
-                    server.ehlo()
-                    server.login(smtp_user, smtp_password)
-                    server.send_message(msg)
-                    server.quit()
-                # Method 2: SSL (port 465)
-                elif smtp_port == 465:
-                    context = ssl.create_default_context()
-                    server = smtplib.SMTP_SSL(smtp_host, smtp_port, context=context, timeout=15)
-                    server.login(smtp_user, smtp_password)
-                    server.send_message(msg)
-                    server.quit()
-                # Method 3: Plain (port 25 or other)
-                else:
-                    server = smtplib.SMTP(smtp_host, smtp_port, timeout=15)
-                    server.login(smtp_user, smtp_password)
-                    server.send_message(msg)
-                    server.quit()
-                
+            msg.attach(MIMEText(
+                f"<html><body><h2>SMTP Connection Successful!</h2>"
+                f"<p>Host: {smtp_host} | Port: {smtp_port} | User: {smtp_user}</p></body></html>",
+                'html'
+            ))
+
+            ctx = ssl.create_default_context()
+
+            def _try_starttls():
+                s = smtplib.SMTP(smtp_host, smtp_port, timeout=20)
+                try:
+                    s.ehlo()
+                    s.starttls(context=ctx)
+                    s.ehlo()
+                    s.login(smtp_user, smtp_password)
+                    s.send_message(msg)
+                    s.quit()
+                except Exception:
+                    try: s.quit()
+                    except Exception: pass
+                    raise
+
+            def _try_ssl(port: int):
+                s = smtplib.SMTP_SSL(smtp_host, port, context=ctx, timeout=20)
+                try:
+                    s.login(smtp_user, smtp_password)
+                    s.send_message(msg)
+                    s.quit()
+                except Exception:
+                    try: s.quit()
+                    except Exception: pass
+                    raise
+
+            last_error = None
+            sent_via = None
+
+            # Port 465 → always SSL
+            if smtp_port == 465:
+                try:
+                    _try_ssl(465)
+                    sent_via = "SSL:465"
+                except Exception as e:
+                    last_error = e
+            else:
+                # Try STARTTLS first (port 587 or custom)
+                try:
+                    _try_starttls()
+                    sent_via = f"STARTTLS:{smtp_port}"
+                except Exception as e:
+                    last_error = e
+                    # Fallback: SSL on 465
+                    try:
+                        _try_ssl(465)
+                        sent_via = "SSL:465(fallback)"
+                    except Exception as e2:
+                        last_error = e2
+
+            if sent_via:
                 return StatusResponse(
-                    status="connected", 
-                    message=f"✅ Test email sent successfully to csenerds@gmail.com"
+                    status="connected",
+                    message=f"Test email sent to {smtp_user} via {sent_via}"
                 )
-            except smtplib.SMTPAuthenticationError as e:
-                return StatusResponse(status="error", message=f"Authentication failed: {str(e)}")
-            except smtplib.SMTPConnectError as e:
-                return StatusResponse(status="error", message=f"Connection failed: {str(e)}")
-            except Exception as e:
-                return StatusResponse(status="error", message=f"SMTP error: {str(e)}")
-                
+
+            err = str(last_error)
+            if "authentication" in err.lower() or "535" in err or "534" in err:
+                return StatusResponse(status="error", message=f"Authentication failed — check username/password. ({err})")
+            elif "connection" in err.lower() or "104" in err or "111" in err:
+                return StatusResponse(status="error", message=f"Cannot reach {smtp_host}:{smtp_port} — check host/port or firewall. ({err})")
+            else:
+                return StatusResponse(status="error", message=f"SMTP error: {err}")
+
         except Exception as exc:
             return StatusResponse(status="error", message=f"SMTP test failed: {str(exc)}")
     if integration == "ai":
@@ -291,6 +309,13 @@ async def test_integration(integration: str, db: AsyncSession = Depends(get_db))
                 return StatusResponse(status="error", message=f"API returned {resp.status_code}")
         except Exception as exc:
             return StatusResponse(status="error", message=str(exc))
+
+    if integration == "aisensy":
+        result = await aisensy_client.test_connection()
+        return StatusResponse(
+            status="connected" if result["connected"] else "error",
+            data=result,
+        )
 
     raise HTTPException(400, f"Unknown integration: {integration}")
 
@@ -350,4 +375,37 @@ async def save_smtp_settings(
         status="ok",
         message="SMTP settings saved successfully",
         data={"host": host, "port": port, "user": user}
+    )
+
+
+# ── SAVE AISENSY SETTINGS ────────────────────────────────────────────────────
+@router.post("/aisensy", response_model=StatusResponse)
+async def save_aisensy_settings(request: dict, db: AsyncSession = Depends(get_db)):
+    """Save AiSensy API key to database (persists across restarts)."""
+    from datetime import datetime
+
+    api_key = request.get("api_key", "").strip()
+    username = request.get("username", settings.AISENSY_USERNAME).strip()
+
+    if not api_key:
+        raise HTTPException(400, "api_key is required")
+
+    for key, value in {"aisensy_api_key": api_key, "aisensy_username": username}.items():
+        result = await db.execute(select(AppSetting).where(AppSetting.key == key))
+        setting = result.scalar_one_or_none()
+        if setting:
+            setting.value = value
+            setting.updated_at = datetime.utcnow()
+        else:
+            db.add(AppSetting(key=key, value=value, updated_at=datetime.utcnow()))
+
+    # Patch runtime settings so the app uses the new key immediately without restart
+    settings.AISENSY_API_KEY = api_key
+    settings.AISENSY_USERNAME = username
+
+    await db.commit()
+    return StatusResponse(
+        status="ok",
+        message="AiSensy settings saved",
+        data={"username": username, "api_key_preview": api_key[:20] + "..."},
     )

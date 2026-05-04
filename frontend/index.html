@@ -1973,6 +1973,7 @@
     integrations: {
       ai: { connected: false, api_key_preview: '', model: '', provider: 'nvidia' },
       whatsapp: { connected: false, phone_number_id: '', verify_token: '' },
+      aisensy: { connected: false, api_key_preview: '', username: 'Hi Tech Group 8161' },
       crm: { connected: false, base_url: '', poll_interval_minutes: 60 },
       visit_app: { connected: false, endpoint: '', api_key: '' },
       email: { connected: false, smtp_host: '', smtp_port: '587', smtp_user: '', smtp_pass: '' },
@@ -2000,6 +2001,7 @@
     integrations: {
       ai: { connected: false, api_key_preview: '', model: '', provider: 'nvidia' },
       whatsapp: { connected: false, phone_number_id: '', verify_token: '' },
+      aisensy: { connected: false, api_key_preview: '', username: 'Hi Tech Group 8161' },
       crm: { connected: false, base_url: '', poll_interval_minutes: 60 },
       visit_app: { connected: false, endpoint: '', api_key: '' },
       email: { connected: false, smtp_host: '', smtp_port: '587', smtp_user: '', smtp_pass: '' },
@@ -3765,8 +3767,8 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
         <div class="settings-group-head">
           <div class="sg-icon" style="background: var(--green-soft); color: var(--green);">◉</div>
           <div class="sg-info">
-            <div class="sg-title">WhatsApp Business API</div>
-            <div class="sg-desc">Send messages to reps and customers · receive incoming via webhook</div>
+            <div class="sg-title">WhatsApp Business API (Meta)</div>
+            <div class="sg-desc">Direct Meta Cloud API — receive incoming via webhook</div>
           </div>
           <span class="sg-status ${ig.whatsapp.connected ? 'connected' : 'disconnected'}">${ig.whatsapp.connected ? '● Connected' : 'Not connected'}</span>
         </div>
@@ -3786,6 +3788,31 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
         </div>
         <div class="settings-actions">
           <button class="btn btn-secondary btn-sm" onclick="testConnection('whatsapp')">Test connection</button>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-head">
+          <div class="sg-icon" style="background: #e8f5e9; color: #25D366;">◎</div>
+          <div class="sg-info">
+            <div class="sg-title">AiSensy WhatsApp API</div>
+            <div class="sg-desc">Send WhatsApp messages via AiSensy campaigns · simpler than Meta Cloud API</div>
+          </div>
+          <span class="sg-status ${(ig.aisensy||{}).connected ? 'connected' : 'disconnected'}">${(ig.aisensy||{}).connected ? '● Connected' : 'Not connected'}</span>
+        </div>
+        <div class="settings-fields">
+          <div class="field-row">
+            <label class="field-label">API Key <span class="req">*</span></label>
+            <input id="aisensy-api-key" class="field-input mono" type="text" value="${escapeHtml((ig.aisensy||{}).api_key_preview || '')}" placeholder="Paste your AiSensy JWT API key">
+          </div>
+          <div class="field-row">
+            <label class="field-label">Account Name</label>
+            <input id="aisensy-username" class="field-input mono" type="text" value="${escapeHtml((ig.aisensy||{}).username || 'Hi Tech Group 8161')}" placeholder="Hi Tech Group 8161">
+          </div>
+        </div>
+        <div class="settings-actions">
+          <button class="btn btn-secondary btn-sm" onclick="testConnection('aisensy')">Test connection</button>
+          <button class="btn btn-primary btn-sm" onclick="saveAiSensySettings()">Save</button>
         </div>
       </div>
 
@@ -4431,21 +4458,60 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
           method: 'POST',
           headers: { 'Content-Type': 'application/json' }
         });
-        
         const result = await response.json();
-        
         if (result.status === 'connected') {
-          alert(`✅ SMTP Connection Successful!\n\n${result.message || 'Connected to SMTP server'}`);
+          alert(`✅ SMTP Connection Successful!\n\n${result.message || 'Connected'}`);
         } else if (result.status === 'not_configured') {
           alert(`⚠️ SMTP Not Configured\n\nPlease enter SMTP settings and click Save first.`);
         } else {
           alert(`❌ SMTP Connection Failed\n\n${result.message || 'Unknown error'}`);
         }
       } catch (error) {
-        alert(`❌ Error testing SMTP connection:\n\n${error.message}`);
+        alert(`❌ Error testing SMTP: ${error.message}`);
+      }
+    } else if (name === 'aisensy') {
+      try {
+        const response = await fetch('/api/settings/test/aisensy', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const result = await response.json();
+        if (result.status === 'connected') {
+          alert(`✅ AiSensy Connected!\n\nAPI key is valid.`);
+        } else {
+          const err = (result.data || {}).error || result.message || 'Unknown error';
+          alert(`❌ AiSensy Connection Failed\n\n${err}`);
+        }
+      } catch (error) {
+        alert(`❌ Error testing AiSensy: ${error.message}`);
       }
     } else {
-      alert(`Test connection to ${name}\n\nIn production, this would ping the API endpoint and verify credentials. For the demo, no live test is performed.`);
+      alert(`Test connection to ${name}\n\nNo live test available for this integration.`);
+    }
+  }
+
+  async function saveAiSensySettings() {
+    const apiKey = document.getElementById('aisensy-api-key')?.value?.trim() || '';
+    const username = document.getElementById('aisensy-username')?.value?.trim() || 'Hi Tech Group 8161';
+    if (!apiKey) {
+      alert('Please paste your AiSensy API key first.');
+      return;
+    }
+    try {
+      const response = await fetch('/api/settings/aisensy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ api_key: apiKey, username })
+      });
+      const result = await response.json();
+      if (response.ok) {
+        alert(`✅ AiSensy settings saved!\n\nKey: ${result.data?.api_key_preview || apiKey.slice(0,20)}...`);
+        await loadData();
+      } else {
+        alert(`❌ Failed to save: ${result.detail || result.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      alert(`❌ Error: ${error.message}`);
     }
   }
 
