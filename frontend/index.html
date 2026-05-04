@@ -2090,7 +2090,7 @@
               smtp_host: settingsData.integrations.smtp.host || '',
               smtp_port: settingsData.integrations.smtp.port || '587',
               smtp_user: settingsData.integrations.smtp.user || '',
-              smtp_pass: '', // Don't show password
+              smtp_pass: settingsData.integrations.smtp.password || '', // Show masked password from backend
               from_name: settingsData.integrations.smtp.from_name || 'Hi-Tech AI Sales',
               from_address: settingsData.integrations.smtp.from_address || ''
             };

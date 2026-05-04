@@ -35,6 +35,9 @@ async def get_settings(db: AsyncSession = Depends(get_db)):
     smtp_host = smtp_settings_db.get("smtp_host", settings.EMAIL_SMTP_HOST)
     smtp_user = smtp_settings_db.get("smtp_user", settings.EMAIL_SMTP_USER)
     smtp_password = smtp_settings_db.get("smtp_password", settings.EMAIL_SMTP_PASSWORD)
+    
+    # Mask password for display (show ••••••••)
+    smtp_password_masked = "••••••••" if smtp_password else ""
 
     return SettingsOut(
         team=list(team),
@@ -65,6 +68,7 @@ async def get_settings(db: AsyncSession = Depends(get_db)):
                 "host": smtp_host,
                 "port": smtp_settings_db.get("smtp_port", str(settings.EMAIL_SMTP_PORT)),
                 "user": smtp_user,
+                "password": smtp_password_masked,
                 "from_name": smtp_settings_db.get("smtp_from_name", settings.EMAIL_FROM_NAME),
                 "from_address": smtp_settings_db.get("smtp_from_address", settings.EMAIL_FROM_ADDRESS),
             },
@@ -157,7 +161,7 @@ async def test_integration(integration: str, db: AsyncSession = Depends(get_db))
         # Get SMTP settings from database
         smtp_settings_result = await db.execute(
             select(AppSetting).where(
-                AppSetting.key.in_(["smtp_host", "smtp_port", "smtp_user", "smtp_password"])
+                AppSetting.key.in_(["smtp_host", "smtp_port", "smtp_user", "smtp_password", "smtp_from_name", "smtp_from_address"])
             )
         )
         smtp_settings_db = {s.key: s.value for s in smtp_settings_result.scalars().all()}
@@ -166,19 +170,56 @@ async def test_integration(integration: str, db: AsyncSession = Depends(get_db))
         smtp_port = int(smtp_settings_db.get("smtp_port", settings.EMAIL_SMTP_PORT))
         smtp_user = smtp_settings_db.get("smtp_user", settings.EMAIL_SMTP_USER)
         smtp_password = smtp_settings_db.get("smtp_password", settings.EMAIL_SMTP_PASSWORD)
+        smtp_from_name = smtp_settings_db.get("smtp_from_name", settings.EMAIL_FROM_NAME)
+        smtp_from_address = smtp_settings_db.get("smtp_from_address", settings.EMAIL_FROM_ADDRESS) or smtp_user
         
         if not smtp_host or not smtp_user or not smtp_password:
             return StatusResponse(status="not_configured", message="SMTP not configured")
         
         try:
             import smtplib
+            from email.mime.text import MIMEText
+            from email.mime.multipart import MIMEMultipart
+            
+            # Create test email
+            msg = MIMEMultipart()
+            msg['From'] = f"{smtp_from_name} <{smtp_from_address}>"
+            msg['To'] = "csenerds@gmail.com"
+            msg['Subject'] = "Hi-Tech AI Sales - SMTP Test Email"
+            
+            body = """
+            <html>
+            <body style="font-family: Arial, sans-serif; padding: 20px;">
+                <h2 style="color: #007AFF;">✅ SMTP Connection Successful!</h2>
+                <p>This is a test email from your Hi-Tech AI Sales system.</p>
+                <p><strong>SMTP Configuration:</strong></p>
+                <ul>
+                    <li>Host: {host}</li>
+                    <li>Port: {port}</li>
+                    <li>User: {user}</li>
+                </ul>
+                <p style="color: #34C759; font-weight: bold;">Your email system is working correctly!</p>
+                <hr style="border: 1px solid #E5E5EA; margin: 20px 0;">
+                <p style="color: #86868B; font-size: 12px;">Sent from Hi-Tech AI Sales Org</p>
+            </body>
+            </html>
+            """.format(host=smtp_host, port=smtp_port, user=smtp_user)
+            
+            msg.attach(MIMEText(body, 'html'))
+            
+            # Connect and send
             server = smtplib.SMTP(smtp_host, smtp_port, timeout=10)
             server.starttls()
             server.login(smtp_user, smtp_password)
+            server.send_message(msg)
             server.quit()
-            return StatusResponse(status="connected", message="SMTP connection successful")
+            
+            return StatusResponse(
+                status="connected", 
+                message=f"✅ Test email sent successfully to csenerds@gmail.com"
+            )
         except Exception as exc:
-            return StatusResponse(status="error", message=f"SMTP connection failed: {str(exc)}")
+            return StatusResponse(status="error", message=f"SMTP test failed: {str(exc)}")
     if integration == "ai":
         if not settings.AI_API_KEY:
             return StatusResponse(status="not_configured", message="No API key set")
