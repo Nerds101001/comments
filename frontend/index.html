@@ -4378,30 +4378,36 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
     const smtpHost = document.querySelector('input[placeholder="smtp.gmail.com"]')?.value || '';
     const smtpPort = document.querySelectorAll('.field-input.mono')[1]?.value || '587';
     const smtpUser = document.querySelector('input[placeholder="ai@hitechgroup.in"]')?.value || '';
-    const smtpPass = document.querySelector('input[type="password"]')?.value || '';
-    
+    const smtpPassRaw = document.querySelector('input[type="password"]')?.value || '';
+    // If the user left the masked placeholder untouched, send empty string so backend preserves existing password
+    const MASK = '••••••••';
+    const smtpPass = smtpPassRaw === MASK ? '' : smtpPassRaw;
+
     if (smtpHost && smtpUser) {
       try {
+        const body = {
+          host: smtpHost,
+          port: parseInt(smtpPort),
+          user: smtpUser,
+          from_name: 'Hi-Tech AI Sales',
+          from_address: smtpUser
+        };
+        // Only include password if user entered/changed it
+        if (smtpPass) body.password = smtpPass;
+
         const response = await fetch('/api/settings/smtp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            host: smtpHost,
-            port: parseInt(smtpPort),
-            user: smtpUser,
-            password: smtpPass,
-            from_name: 'Hi-Tech AI Sales',
-            from_address: smtpUser
-          })
+          body: JSON.stringify(body)
         });
-        
+
         if (response.ok) {
           alert('✅ SMTP settings saved successfully!');
           // Reload settings to show updated connection status
           await loadData();
         } else {
           const error = await response.json();
-          alert(`❌ Failed to save SMTP settings: ${error.message || 'Unknown error'}`);
+          alert(`❌ Failed to save SMTP settings: ${error.detail || error.message || 'Unknown error'}`);
         }
       } catch (error) {
         alert(`❌ Error saving SMTP settings: ${error.message}`);

@@ -313,17 +313,19 @@ async def save_smtp_settings(
     from_name = request.get("from_name", "Hi-Tech AI Sales")
     from_address = request.get("from_address", "")
     
-    if not host or not user or not password:
-        raise HTTPException(400, "Missing required fields: host, user, password")
-    
+    if not host or not user:
+        raise HTTPException(400, "Missing required fields: host, user")
+
     smtp_settings = {
         "smtp_host": host,
         "smtp_port": str(port),
         "smtp_user": user,
-        "smtp_password": password,
         "smtp_from_name": from_name,
         "smtp_from_address": from_address or user,
     }
+    # Only update password if a new one was provided
+    if password:
+        smtp_settings["smtp_password"] = password
     
     for key, value in smtp_settings.items():
         result = await db.execute(
