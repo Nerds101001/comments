@@ -52,15 +52,22 @@ async def crm_status():
 # ── SYNC STATUS ───────────────────────────────────────────────────────────────
 @router.get("/sync-status", response_model=StatusResponse)
 async def get_sync_status(db: AsyncSession = Depends(get_db)):
-    """Get the last CRM sync time and pending comments count."""
-    from app.models import AppSetting
+    """Get the last CRM sync time, pending comments count, and check-in stats."""
+    from app.models import AppSetting, CheckIn
     
-    # Get last sync time
+    # Get last sync time for comments
     last_sync_result = await db.execute(
         select(AppSetting).where(AppSetting.key == "last_crm_sync")
     )
     last_sync_setting = last_sync_result.scalar_one_or_none()
     last_sync = last_sync_setting.value if last_sync_setting else None
+    
+    # Get last sync time for check-ins
+    last_checkin_sync_result = await db.execute(
+        select(AppSetting).where(AppSetting.key == "last_checkin_sync")
+    )
+    last_checkin_sync_setting = last_checkin_sync_result.scalar_one_or_none()
+    last_checkin_sync = last_checkin_sync_setting.value if last_checkin_sync_setting else None
     
     # Count pending comments
     pending_result = await db.execute(
@@ -78,13 +85,45 @@ async def get_sync_status(db: AsyncSession = Depends(get_db)):
     )
     processed_count = len(processed_result.scalars().all())
     
+    # Count total check-ins
+    checkin_result = await db.execute(select(CheckIn))
+    total_checkins = len(checkin_result.scalars().all())
+    
+    # Count new comments since last sync
+    new_comments_count = 0
+    if last_sync:
+        try:
+            last_sync_dt = datetime.fromisoformat(last_sync)
+            new_comments_result = await db.execute(
+                select(CRMComment).where(CRMComment.created_at >= last_sync_dt)
+            )
+            new_comments_count = len(new_comments_result.scalars().all())
+        except:
+            pass
+    
+    # Count new check-ins since last sync
+    new_checkins_count = 0
+    if last_checkin_sync:
+        try:
+            last_checkin_sync_dt = datetime.fromisoformat(last_checkin_sync)
+            new_checkins_result = await db.execute(
+                select(CheckIn).where(CheckIn.created_at >= last_checkin_sync_dt)
+            )
+            new_checkins_count = len(new_checkins_result.scalars().all())
+        except:
+            pass
+    
     return StatusResponse(
         status="ok",
         data={
             "last_sync": last_sync,
+            "last_checkin_sync": last_checkin_sync,
             "pending_count": pending_count,
             "processed_count": processed_count,
             "total_count": total_count,
+            "total_checkins": total_checkins,
+            "new_comments_since_last_sync": new_comments_count,
+            "new_checkins_since_last_sync": new_checkins_count,
         },
     )
 

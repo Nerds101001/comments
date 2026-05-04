@@ -21,7 +21,30 @@ async def sync_checkin_data(
     db: AsyncSession = Depends(get_db),
 ):
     """Sync check-in/check-out data from CRM for all active reps."""
+    from app.models import AppSetting
+    from datetime import datetime
+    
     result = await checkin_service.sync_checkin_data(db, days)
+    
+    # Update last check-in sync time
+    now = datetime.utcnow()
+    last_checkin_sync_result = await db.execute(
+        select(AppSetting).where(AppSetting.key == "last_checkin_sync")
+    )
+    last_checkin_sync_setting = last_checkin_sync_result.scalar_one_or_none()
+    
+    if last_checkin_sync_setting:
+        last_checkin_sync_setting.value = now.isoformat()
+        last_checkin_sync_setting.updated_at = now
+    else:
+        last_checkin_sync_setting = AppSetting(
+            key="last_checkin_sync",
+            value=now.isoformat(),
+            updated_at=now
+        )
+        db.add(last_checkin_sync_setting)
+    
+    await db.commit()
     
     return StatusResponse(
         status="success",

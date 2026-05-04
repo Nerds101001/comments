@@ -3510,15 +3510,15 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
         <div class="settings-fields">
           <div class="field-row">
             <label class="field-label">Provider</label>
-            <input class="field-input mono" type="text" value="${escapeHtml(ig.ai.provider || 'nvidia').toUpperCase()}" readonly style="text-transform: uppercase;">
+            <input class="field-input mono" type="text" value="${escapeHtml((ig.ai.provider || 'nvidia').toUpperCase())}" readonly style="text-transform: uppercase;">
           </div>
           <div class="field-row">
             <label class="field-label">API Key <span class="req">*</span></label>
-            <input class="field-input mono" type="password" value="${escapeHtml(ig.ai.api_key_preview || '')}" placeholder="${ig.ai.connected ? '●●●●●●●●' : 'Not configured'}" readonly>
+            <input class="field-input mono" type="password" value="${ig.ai.api_key_preview ? '●●●●●●●●' + ig.ai.api_key_preview.slice(-4) : ''}" placeholder="${ig.ai.connected ? 'Configured' : 'Not configured'}" readonly>
           </div>
           <div class="field-row">
             <label class="field-label">Model</label>
-            <input class="field-input mono" type="text" value="${escapeHtml(ig.ai.model || 'Not configured')}" readonly>
+            <input class="field-input mono" type="text" value="${escapeHtml(ig.ai.model || '')}" placeholder="${ig.ai.connected ? 'Configured' : 'Not configured'}" readonly>
           </div>
         </div>
         <div class="settings-actions">
@@ -3570,7 +3570,7 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
           </div>
           <div class="field-row">
             <label class="field-label">API Key <span class="req">*</span></label>
-            <input class="field-input mono" type="password" value="${ig.crm.connected ? '***' : ''}" readonly>
+            <input class="field-input mono" type="password" value="${ig.crm.connected ? '●●●●●●●●' : ''}" placeholder="${ig.crm.connected ? 'Configured' : 'Not configured'}" readonly>
           </div>
         </div>
         <div class="settings-actions">
@@ -3583,7 +3583,7 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
           <div class="sg-icon" style="background: var(--green-soft); color: var(--green);">⟳</div>
           <div class="sg-info">
             <div class="sg-title">CRM Sync Status</div>
-            <div class="sg-desc">Auto-syncs every 60 minutes · Fetches new comments from CRM and creates conversations</div>
+            <div class="sg-desc">Auto-syncs every 60 minutes · Fetches new comments and check-ins from CRM</div>
           </div>
           <span class="sg-status connected" id="crmSyncStatus">Loading...</span>
         </div>
@@ -4197,14 +4197,29 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
             })
           : 'Never';
         
+        const lastCheckinSyncFormatted = syncData.last_checkin_sync 
+          ? new Date(syncData.last_checkin_sync).toLocaleString('en-IN', {
+              dateStyle: 'medium',
+              timeStyle: 'short'
+            })
+          : 'Never';
+        
         detailsEl.innerHTML = `
           <div class="field-row">
-            <label class="field-label">Last Sync Time</label>
+            <label class="field-label">Last Comments Sync</label>
             <div class="field-value mono">${lastSyncFormatted}</div>
           </div>
           <div class="field-row">
+            <label class="field-label">Last Check-ins Sync</label>
+            <div class="field-value mono">${lastCheckinSyncFormatted}</div>
+          </div>
+          <div class="field-row">
             <label class="field-label">Total Comments</label>
-            <div class="field-value"><strong>${syncData.total_count || 0}</strong> comments in database</div>
+            <div class="field-value"><strong>${syncData.total_count || 0}</strong> comments in database ${syncData.new_comments_since_last_sync > 0 ? `<span style="color: var(--green);">(+${syncData.new_comments_since_last_sync} new)</span>` : ''}</div>
+          </div>
+          <div class="field-row">
+            <label class="field-label">Total Check-ins</label>
+            <div class="field-value"><strong>${syncData.total_checkins || 0}</strong> check-ins in database ${syncData.new_checkins_since_last_sync > 0 ? `<span style="color: var(--green);">(+${syncData.new_checkins_since_last_sync} new)</span>` : ''}</div>
           </div>
           <div class="field-row">
             <label class="field-label">Processed</label>
@@ -4242,20 +4257,33 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
     btn.innerHTML = '<span class="loader"></span> Syncing...';
     
     try {
-      const response = await fetch('/api/crm/sync', {
+      // Sync comments
+      const commentsResponse = await fetch('/api/crm/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
       
-      if (!response.ok) {
-        const error = await response.text();
+      if (!commentsResponse.ok) {
+        const error = await commentsResponse.text();
         throw new Error(error);
       }
       
-      const result = await response.json();
-      const newComments = result.data?.new_comments || 0;
+      const commentsResult = await commentsResponse.json();
+      const newComments = commentsResult.data?.new_comments || 0;
       
-      alert(`✅ Sync completed!\n\n${newComments} new comments fetched from CRM.`);
+      // Sync check-ins
+      const checkinsResponse = await fetch('/api/checkin/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      let newCheckins = 0;
+      if (checkinsResponse.ok) {
+        const checkinsResult = await checkinsResponse.json();
+        newCheckins = checkinsResult.data?.total_new || 0;
+      }
+      
+      alert(`✅ Sync completed!\n\n${newComments} new comments\n${newCheckins} new check-ins`);
       
       // Reload sync status
       await loadCRMSyncStatus();
