@@ -28,10 +28,11 @@ async def get_settings(db: AsyncSession = Depends(get_db)):
         team=list(team),
         seniors=list(seniors),
         integrations={
-            "claude": {
-                "connected": bool(settings.CLAUDE_API_KEY),
-                "model": settings.CLAUDE_MODEL,
-                "api_key_preview": (settings.CLAUDE_API_KEY[:8] + "...") if settings.CLAUDE_API_KEY else "",
+            "ai": {
+                "connected": bool(settings.AI_API_KEY),
+                "provider": settings.AI_PROVIDER,
+                "model": settings.AI_MODEL,
+                "api_key_preview": (settings.AI_API_KEY[:8] + "...") if settings.AI_API_KEY else "",
             },
             "whatsapp": {
                 "connected": bool(settings.WHATSAPP_PHONE_NUMBER_ID and settings.WHATSAPP_ACCESS_TOKEN),
@@ -39,7 +40,7 @@ async def get_settings(db: AsyncSession = Depends(get_db)):
                 "verify_token": settings.WHATSAPP_VERIFY_TOKEN,
             },
             "crm": {
-                "connected": bool(settings.CRM_TOKEN or settings.CRM_USERNAME),
+                "connected": bool(settings.CRM_USERNAME and settings.CRM_PASSWORD),
                 "base_url": settings.CRM_BASE_URL,
                 "poll_interval_minutes": settings.CRM_POLL_INTERVAL_MINUTES,
             },
@@ -132,27 +133,48 @@ async def test_integration(integration: str):
             status="connected" if configured else "not_configured",
             data={"configured": configured, "phone_number_id": settings.WHATSAPP_PHONE_NUMBER_ID},
         )
-    if integration == "claude":
-        if not settings.CLAUDE_API_KEY:
+    if integration == "ai":
+        if not settings.AI_API_KEY:
             return StatusResponse(status="not_configured", message="No API key set")
         try:
             import httpx
             async with httpx.AsyncClient(timeout=10) as client:
-                resp = await client.post(
-                    settings.CLAUDE_API_URL,
-                    headers={
-                        "x-api-key": settings.CLAUDE_API_KEY,
-                        "anthropic-version": "2023-06-01",
-                        "content-type": "application/json",
-                    },
-                    json={
-                        "model": settings.CLAUDE_MODEL,
-                        "max_tokens": 10,
-                        "messages": [{"role": "user", "content": "ping"}],
-                    },
-                )
+                # Test based on provider
+                if settings.AI_PROVIDER == "nvidia":
+                    # NVIDIA API test
+                    resp = await client.post(
+                        f"{settings.AI_BASE_URL}/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {settings.AI_API_KEY}",
+                            "Content-Type": "application/json",
+                        },
+                        json={
+                            "model": settings.AI_MODEL,
+                            "messages": [{"role": "user", "content": "ping"}],
+                            "max_tokens": 10,
+                        },
+                    )
+                else:
+                    # Claude API test
+                    resp = await client.post(
+                        f"{settings.AI_BASE_URL}/messages",
+                        headers={
+                            "x-api-key": settings.AI_API_KEY,
+                            "anthropic-version": "2023-06-01",
+                            "content-type": "application/json",
+                        },
+                        json={
+                            "model": settings.AI_MODEL,
+                            "max_tokens": 10,
+                            "messages": [{"role": "user", "content": "ping"}],
+                        },
+                    )
+                
                 if resp.status_code == 200:
-                    return StatusResponse(status="connected", message=f"Claude {settings.CLAUDE_MODEL} OK")
+                    return StatusResponse(
+                        status="connected", 
+                        message=f"{settings.AI_PROVIDER.upper()} {settings.AI_MODEL} OK"
+                    )
                 return StatusResponse(status="error", message=f"API returned {resp.status_code}")
         except Exception as exc:
             return StatusResponse(status="error", message=str(exc))

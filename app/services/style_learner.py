@@ -71,8 +71,8 @@ async def add_sample(
 
 
 async def _refresh_profile(db: AsyncSession, language_key: str) -> None:
-    """Ask Claude to distil the latest samples into a writing-style summary."""
-    if not settings.CLAUDE_API_KEY:
+    """Ask AI to distil the latest samples into a writing-style summary."""
+    if not settings.AI_API_KEY:
         return
 
     result = await db.execute(
@@ -109,24 +109,43 @@ Output ONLY the style guide, no preamble."""
 
     try:
         async with httpx.AsyncClient(timeout=30) as client:
-            resp = await client.post(
-                settings.CLAUDE_API_URL,
-                headers={
-                    "x-api-key": settings.CLAUDE_API_KEY,
-                    "anthropic-version": "2023-06-01",
-                    "content-type": "application/json",
-                },
-                json={
-                    "model": settings.CLAUDE_MODEL,
-                    "max_tokens": 600,
-                    "messages": [{"role": "user", "content": prompt}],
-                },
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            summary = "".join(
-                b["text"] for b in data.get("content", []) if b.get("type") == "text"
-            ).strip()
+            if settings.AI_PROVIDER == "nvidia":
+                # NVIDIA API
+                resp = await client.post(
+                    f"{settings.AI_BASE_URL}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {settings.AI_API_KEY}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": settings.AI_MODEL,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "max_tokens": 600,
+                    },
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                summary = data["choices"][0]["message"]["content"].strip()
+            else:
+                # Claude API
+                resp = await client.post(
+                    f"{settings.AI_BASE_URL}/messages",
+                    headers={
+                        "x-api-key": settings.AI_API_KEY,
+                        "anthropic-version": "2023-06-01",
+                        "content-type": "application/json",
+                    },
+                    json={
+                        "model": settings.AI_MODEL,
+                        "max_tokens": 600,
+                        "messages": [{"role": "user", "content": prompt}],
+                    },
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                summary = "".join(
+                    b["text"] for b in data.get("content", []) if b.get("type") == "text"
+                ).strip()
     except Exception as exc:
         logger.warning("Style profile refresh failed for %s: %s", language_key, exc)
         return
