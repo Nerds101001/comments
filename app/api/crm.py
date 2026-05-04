@@ -187,7 +187,11 @@ async def sync_crm_comments(
             to_date=to_date,
         )
         for raw in comments:
-            crm_id = str(raw.get("id") or raw.get("commentId") or raw.get("CommentId", ""))
+            crm_id = str(
+                raw.get("id") or raw.get("Id") or raw.get("ID") or
+                raw.get("commentId") or raw.get("CommentId") or raw.get("COMMENT_ID") or
+                raw.get("CommentID") or ""
+            )
 
             # Skip if already stored
             if crm_id:
@@ -198,12 +202,23 @@ async def sync_crm_comments(
                     continue
 
             comment_text = (
-                raw.get("comment") or raw.get("Comment") or
-                raw.get("remarks") or raw.get("Remarks") or str(raw)
+                raw.get("comment") or raw.get("Comment") or raw.get("COMMENT") or
+                raw.get("remarks") or raw.get("Remarks") or raw.get("REMARKS") or str(raw)
             )
-            comp_code = str(raw.get("compCode") or raw.get("CompCode") or "")
-            crm_emp_code = str(raw.get("empCode") or raw.get("EmpCode") or rep.emp_code)
-            comment_date = str(raw.get("date") or raw.get("Date") or raw.get("createdOn") or "")
+            # CRM API returns COMP_CODE (ALL_CAPS) as seen in GetCustomersLastComment response
+            comp_code = str(
+                raw.get("compCode") or raw.get("CompCode") or raw.get("COMP_CODE") or
+                raw.get("comp_code") or ""
+            )
+            crm_emp_code = str(
+                raw.get("empCode") or raw.get("EmpCode") or raw.get("EMP_CODE") or
+                raw.get("emp_code") or rep.emp_code
+            )
+            comment_date = str(
+                raw.get("date") or raw.get("Date") or raw.get("DATE") or
+                raw.get("createdOn") or raw.get("CreatedOn") or raw.get("CREATED_ON") or
+                raw.get("createdAt") or raw.get("CreatedAt") or ""
+            )
 
             customer = custs_by_code.get(comp_code)
 
@@ -231,12 +246,12 @@ async def sync_crm_comments(
     last_sync_setting = last_sync_result.scalar_one_or_none()
     
     if last_sync_setting:
-        last_sync_setting.value = today.isoformat()
+        last_sync_setting.value = today.isoformat() + "Z"
         last_sync_setting.updated_at = today
     else:
         last_sync_setting = AppSetting(
             key="last_crm_sync",
-            value=today.isoformat(),
+            value=today.isoformat() + "Z",
             updated_at=today
         )
         db.add(last_sync_setting)

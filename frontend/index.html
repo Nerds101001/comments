@@ -3514,7 +3514,9 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
       // Calculate time ago for last sync
       const getTimeAgo = (isoString) => {
         if (!isoString) return 'Never';
-        const date = new Date(isoString);
+        // Ensure the string is parsed as UTC (append Z if no timezone info present)
+        const normalized = /[Z+]/.test(isoString) ? isoString : isoString + 'Z';
+        const date = new Date(normalized);
         const now = new Date();
         const diffMs = now - date;
         const diffMins = Math.floor(diffMs / 60000);
@@ -4457,7 +4459,8 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
       if (statusEl) {
         const lastSync = syncData.last_sync;
         if (lastSync) {
-          const syncDate = new Date(lastSync);
+          const normalizedLastSync = /[Z+]/.test(lastSync) ? lastSync : lastSync + 'Z';
+          const syncDate = new Date(normalizedLastSync);
           const now = new Date();
           const diffMinutes = Math.floor((now - syncDate) / 1000 / 60);
           
@@ -4559,8 +4562,8 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
       const commentsResult = await commentsResponse.json();
       const newComments = commentsResult.data?.new_comments || 0;
       
-      // Sync check-ins
-      const checkinsResponse = await fetch('/api/checkin/sync', {
+      // Sync check-ins — 182 days = 6 months full backfill
+      const checkinsResponse = await fetch('/api/checkin/sync?days=182', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });

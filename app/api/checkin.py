@@ -17,7 +17,7 @@ router = APIRouter(prefix="/api/checkin", tags=["checkin"])
 
 @router.post("/sync", response_model=StatusResponse)
 async def sync_checkin_data(
-    days: int = Query(30, ge=1, le=90, description="Number of days to sync"),
+    days: int = Query(182, ge=1, le=365, description="Number of days to sync (default 182 = 6 months)"),
     db: AsyncSession = Depends(get_db),
 ):
     """Sync check-in/check-out data from CRM for all active reps."""
@@ -34,12 +34,12 @@ async def sync_checkin_data(
     last_checkin_sync_setting = last_checkin_sync_result.scalar_one_or_none()
     
     if last_checkin_sync_setting:
-        last_checkin_sync_setting.value = now.isoformat()
+        last_checkin_sync_setting.value = now.isoformat() + "Z"
         last_checkin_sync_setting.updated_at = now
     else:
         last_checkin_sync_setting = AppSetting(
             key="last_checkin_sync",
-            value=now.isoformat(),
+            value=now.isoformat() + "Z",
             updated_at=now
         )
         db.add(last_checkin_sync_setting)

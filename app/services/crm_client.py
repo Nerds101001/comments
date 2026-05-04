@@ -193,19 +193,22 @@ async def get_checkin_data(
 ) -> list:
     """
     POST /api/Reports/GetCheckinData
-    Returns check-in/check-out records with visit duration.
+    Returns check-in records for all reps (or one rep if emp_code given).
+
+    IMPORTANT: API requires StartDate/EndDate keys in YYYY-MM-DD format.
+    Omitting EmpCode returns ALL reps' data (admin access required).
     """
     today = datetime.utcnow()
     body = {
-        "fromDate": from_date or (today - timedelta(days=1)).strftime("%d-%m-%Y"),
-        "toDate": to_date or today.strftime("%d-%m-%Y"),
+        "StartDate": from_date or (today - timedelta(days=1)).strftime("%Y-%m-%d"),
+        "EndDate": to_date or today.strftime("%Y-%m-%d"),
     }
     if emp_code:
-        body["empCode"] = emp_code
+        body["EmpCode"] = int(emp_code)
     try:
         data = await _post("/api/Reports/GetCheckinData", body)
         if isinstance(data, list): return data
-        res = data.get("data") or data.get("Data") or data.get("Result")
+        res = data.get("Data") or data.get("data") or data.get("Result")
         return res if isinstance(res, list) else []
     except Exception as exc:
         logger.error("get_checkin_data failed: %s", exc)
