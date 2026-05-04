@@ -44,8 +44,9 @@ async def lifespan(app: FastAPI):
     await init_db()
     await _seed_if_empty()
     _start_scheduler()
-    # Run initial sync on startup
-    await _run_initial_sync()
+    # Run initial sync in background (don't block startup)
+    import asyncio
+    asyncio.create_task(_run_initial_sync())
     yield
     logger.info("Shutting down…")
 
@@ -53,13 +54,17 @@ async def lifespan(app: FastAPI):
 async def _run_initial_sync():
     """Run an initial CRM sync on startup to catch up on any missed data."""
     try:
-        logger.info("Running initial CRM sync on startup...")
+        logger.info("Running initial CRM sync in background...")
+        # Add a small delay to let the app fully start first
+        import asyncio
+        await asyncio.sleep(5)
+        
         async with AsyncSessionLocal() as db:
             from app.api import crm as crm_api
             from app.api import checkin as checkin_api
             
-            # Sync comments (last 2 hours to catch up)
-            result = await crm_api.sync_crm_comments(hours_back=2, emp_code=None, db=db)
+            # Sync comments (only last 1 hour to avoid timeout)
+            result = await crm_api.sync_crm_comments(hours_back=1, emp_code=None, db=db)
             new_comments = result.data.get("new_comments", 0) if result.data else 0
             
             # Sync check-ins (last 1 day)
