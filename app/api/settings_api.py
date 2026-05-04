@@ -231,16 +231,23 @@ async def test_integration(integration: str, db: AsyncSession = Depends(get_db))
 # ── SAVE SMTP SETTINGS ────────────────────────────────────────────────────────
 @router.post("/smtp", response_model=StatusResponse)
 async def save_smtp_settings(
-    host: str,
-    port: int,
-    user: str,
-    password: str,
-    from_name: str = "Hi-Tech AI Sales",
-    from_address: str = "",
+    request: dict,
     db: AsyncSession = Depends(get_db)
 ):
     """Save SMTP settings to database."""
     from datetime import datetime
+    from fastapi import Body
+    
+    # Extract values from request body
+    host = request.get("host", "")
+    port = request.get("port", 587)
+    user = request.get("user", "")
+    password = request.get("password", "")
+    from_name = request.get("from_name", "Hi-Tech AI Sales")
+    from_address = request.get("from_address", "")
+    
+    if not host or not user or not password:
+        raise HTTPException(400, "Missing required fields: host, user, password")
     
     smtp_settings = {
         "smtp_host": host,
