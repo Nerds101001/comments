@@ -25,7 +25,7 @@ async def send_email(
     attachments: Optional[List[Path]] = None,
 ) -> bool:
     """
-    Send an email via SMTP.
+    Send an email via SMTP using settings from database.
     
     Args:
         to: Recipient email address
@@ -39,14 +39,34 @@ async def send_email(
     Returns:
         True if sent successfully, False otherwise
     """
-    if not settings.EMAIL_SMTP_HOST or not settings.EMAIL_SMTP_USER:
+    # Get SMTP settings from database
+    from app.database import AsyncSessionLocal
+    from app.models import AppSetting
+    from sqlalchemy import select
+    
+    async with AsyncSessionLocal() as db:
+        smtp_settings_result = await db.execute(
+            select(AppSetting).where(
+                AppSetting.key.in_(["smtp_host", "smtp_port", "smtp_user", "smtp_password", "smtp_from_name", "smtp_from_address"])
+            )
+        )
+        smtp_settings_db = {s.key: s.value for s in smtp_settings_result.scalars().all()}
+    
+    smtp_host = smtp_settings_db.get("smtp_host", settings.EMAIL_SMTP_HOST)
+    smtp_port = int(smtp_settings_db.get("smtp_port", str(settings.EMAIL_SMTP_PORT)))
+    smtp_user = smtp_settings_db.get("smtp_user", settings.EMAIL_SMTP_USER)
+    smtp_password = smtp_settings_db.get("smtp_password", settings.EMAIL_SMTP_PASSWORD)
+    from_name = smtp_settings_db.get("smtp_from_name", settings.EMAIL_FROM_NAME)
+    from_address = smtp_settings_db.get("smtp_from_address", settings.EMAIL_FROM_ADDRESS or smtp_user)
+    
+    if not smtp_host or not smtp_user:
         logger.warning("Email not configured. Skipping send.")
         return False
     
     try:
         # Create message
         msg = MIMEMultipart('alternative')
-        msg['From'] = f"{settings.EMAIL_FROM_NAME} <{settings.EMAIL_FROM_ADDRESS or settings.EMAIL_SMTP_USER}>"
+        msg['From'] = f"{from_name} <{from_address}>"
         msg['To'] = to
         msg['Subject'] = subject
         
@@ -80,9 +100,9 @@ async def send_email(
                     msg.attach(part)
         
         # Send email
-        with smtplib.SMTP(settings.EMAIL_SMTP_HOST, settings.EMAIL_SMTP_PORT) as server:
+        with smtplib.SMTP(smtp_host, smtp_port) as server:
             server.starttls()
-            server.login(settings.EMAIL_SMTP_USER, settings.EMAIL_SMTP_PASSWORD)
+            server.login(smtp_user, smtp_password)
             
             recipients = [to]
             if cc:

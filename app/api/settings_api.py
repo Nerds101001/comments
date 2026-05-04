@@ -24,6 +24,18 @@ async def get_settings(db: AsyncSession = Depends(get_db)):
     team = (await db.execute(select(Rep).order_by(Rep.id))).scalars().all()
     seniors = (await db.execute(select(Senior).order_by(Senior.id))).scalars().all()
 
+    # Get SMTP settings from database
+    smtp_settings_result = await db.execute(
+        select(AppSetting).where(
+            AppSetting.key.in_(["smtp_host", "smtp_port", "smtp_user", "smtp_password", "smtp_from_name", "smtp_from_address"])
+        )
+    )
+    smtp_settings_db = {s.key: s.value for s in smtp_settings_result.scalars().all()}
+    
+    smtp_host = smtp_settings_db.get("smtp_host", settings.EMAIL_SMTP_HOST)
+    smtp_user = smtp_settings_db.get("smtp_user", settings.EMAIL_SMTP_USER)
+    smtp_password = smtp_settings_db.get("smtp_password", settings.EMAIL_SMTP_PASSWORD)
+
     return SettingsOut(
         team=list(team),
         seniors=list(seniors),
@@ -47,6 +59,14 @@ async def get_settings(db: AsyncSession = Depends(get_db)):
             "gmail": {
                 "connected": False,  # checked via /api/gmail/status
                 "client_id_set": bool(settings.GMAIL_CLIENT_ID),
+            },
+            "smtp": {
+                "connected": bool(smtp_host and smtp_user and smtp_password),
+                "host": smtp_host,
+                "port": smtp_settings_db.get("smtp_port", str(settings.EMAIL_SMTP_PORT)),
+                "user": smtp_user,
+                "from_name": smtp_settings_db.get("smtp_from_name", settings.EMAIL_FROM_NAME),
+                "from_address": smtp_settings_db.get("smtp_from_address", settings.EMAIL_FROM_ADDRESS),
             },
         },
         escalation_rules={
@@ -120,7 +140,7 @@ async def update_senior(senior_id: str, body: SeniorCreate, db: AsyncSession = D
 
 # ── TEST CONNECTIONS ──────────────────────────────────────────────────────────
 @router.post("/test/{integration}", response_model=StatusResponse)
-async def test_integration(integration: str):
+async def test_integration(integration: str, db: AsyncSession = Depends(get_db)):
     if integration == "crm":
         result = await crm_client.test_connection()
         return StatusResponse(
@@ -133,6 +153,32 @@ async def test_integration(integration: str):
             status="connected" if configured else "not_configured",
             data={"configured": configured, "phone_number_id": settings.WHATSAPP_PHONE_NUMBER_ID},
         )
+    if integration == "smtp":
+        # Get SMTP settings from database
+        smtp_settings_result = await db.execute(
+            select(AppSetting).where(
+                AppSetting.key.in_(["smtp_host", "smtp_port", "smtp_user", "smtp_password"])
+            )
+        )
+        smtp_settings_db = {s.key: s.value for s in smtp_settings_result.scalars().all()}
+        
+        smtp_host = smtp_settings_db.get("smtp_host", settings.EMAIL_SMTP_HOST)
+        smtp_port = int(smtp_settings_db.get("smtp_port", settings.EMAIL_SMTP_PORT))
+        smtp_user = smtp_settings_db.get("smtp_user", settings.EMAIL_SMTP_USER)
+        smtp_password = smtp_settings_db.get("smtp_password", settings.EMAIL_SMTP_PASSWORD)
+        
+        if not smtp_host or not smtp_user or not smtp_password:
+            return StatusResponse(status="not_configured", message="SMTP not configured")
+        
+        try:
+            import smtplib
+            server = smtplib.SMTP(smtp_host, smtp_port, timeout=10)
+            server.starttls()
+            server.login(smtp_user, smtp_password)
+            server.quit()
+            return StatusResponse(status="connected", message="SMTP connection successful")
+        except Exception as exc:
+            return StatusResponse(status="error", message=f"SMTP connection failed: {str(exc)}")
     if integration == "ai":
         if not settings.AI_API_KEY:
             return StatusResponse(status="not_configured", message="No API key set")
@@ -180,3 +226,52 @@ async def test_integration(integration: str):
             return StatusResponse(status="error", message=str(exc))
 
     raise HTTPException(400, f"Unknown integration: {integration}")
+
+
+# ── SAVE SMTP SETTINGS ────────────────────────────────────────────────────────
+@router.post("/smtp", response_model=StatusResponse)
+async def save_smtp_settings(
+    host: str,
+    port: int,
+    user: str,
+    password: str,
+    from_name: str = "Hi-Tech AI Sales",
+    from_address: str = "",
+    db: AsyncSession = Depends(get_db)
+):
+    """Save SMTP settings to database."""
+    from datetime import datetime
+    
+    smtp_settings = {
+        "smtp_host": host,
+        "smtp_port": str(port),
+        "smtp_user": user,
+        "smtp_password": password,
+        "smtp_from_name": from_name,
+        "smtp_from_address": from_address or user,
+    }
+    
+    for key, value in smtp_settings.items():
+        result = await db.execute(
+            select(AppSetting).where(AppSetting.key == key)
+        )
+        setting = result.scalar_one_or_none()
+        
+        if setting:
+            setting.value = value
+            setting.updated_at = datetime.utcnow()
+        else:
+            setting = AppSetting(
+                key=key,
+                value=value,
+                updated_at=datetime.utcnow()
+            )
+            db.add(setting)
+    
+    await db.commit()
+    
+    return StatusResponse(
+        status="ok",
+        message="SMTP settings saved successfully",
+        data={"host": host, "port": port, "user": user}
+    )
