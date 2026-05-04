@@ -88,13 +88,13 @@ async def fetch_checkin_data_from_crm(
         return []
 
 
-async def sync_checkin_data(db: AsyncSession, days: int = 30) -> Dict:
+async def sync_checkin_data(db: AsyncSession, days: int = 90) -> Dict:
     """
     Sync check-in data from CRM for all active reps.
     
     Args:
         db: Database session
-        days: Number of days to sync (default 30)
+        days: Number of days to sync (default 90)
     
     Returns:
         Summary of sync operation

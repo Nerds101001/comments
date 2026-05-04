@@ -178,6 +178,7 @@ async def test_integration(integration: str, db: AsyncSession = Depends(get_db))
         
         try:
             import smtplib
+            import ssl
             from email.mime.text import MIMEText
             from email.mime.multipart import MIMEMultipart
             
@@ -207,17 +208,42 @@ async def test_integration(integration: str, db: AsyncSession = Depends(get_db))
             
             msg.attach(MIMEText(body, 'html'))
             
-            # Connect and send
-            server = smtplib.SMTP(smtp_host, smtp_port, timeout=10)
-            server.starttls()
-            server.login(smtp_user, smtp_password)
-            server.send_message(msg)
-            server.quit()
-            
-            return StatusResponse(
-                status="connected", 
-                message=f"✅ Test email sent successfully to csenerds@gmail.com"
-            )
+            # Try different connection methods
+            try:
+                # Method 1: STARTTLS (port 587)
+                if smtp_port == 587:
+                    server = smtplib.SMTP(smtp_host, smtp_port, timeout=15)
+                    server.ehlo()
+                    server.starttls()
+                    server.ehlo()
+                    server.login(smtp_user, smtp_password)
+                    server.send_message(msg)
+                    server.quit()
+                # Method 2: SSL (port 465)
+                elif smtp_port == 465:
+                    context = ssl.create_default_context()
+                    server = smtplib.SMTP_SSL(smtp_host, smtp_port, context=context, timeout=15)
+                    server.login(smtp_user, smtp_password)
+                    server.send_message(msg)
+                    server.quit()
+                # Method 3: Plain (port 25 or other)
+                else:
+                    server = smtplib.SMTP(smtp_host, smtp_port, timeout=15)
+                    server.login(smtp_user, smtp_password)
+                    server.send_message(msg)
+                    server.quit()
+                
+                return StatusResponse(
+                    status="connected", 
+                    message=f"✅ Test email sent successfully to csenerds@gmail.com"
+                )
+            except smtplib.SMTPAuthenticationError as e:
+                return StatusResponse(status="error", message=f"Authentication failed: {str(e)}")
+            except smtplib.SMTPConnectError as e:
+                return StatusResponse(status="error", message=f"Connection failed: {str(e)}")
+            except Exception as e:
+                return StatusResponse(status="error", message=f"SMTP error: {str(e)}")
+                
         except Exception as exc:
             return StatusResponse(status="error", message=f"SMTP test failed: {str(exc)}")
     if integration == "ai":

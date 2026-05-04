@@ -67,8 +67,8 @@ async def _run_initial_sync():
             result = await crm_api.sync_crm_comments(hours_back=1, emp_code=None, db=db)
             new_comments = result.data.get("new_comments", 0) if result.data else 0
             
-            # Sync check-ins (last 1 day)
-            checkin_result = await checkin_api.sync_checkin_data(days=1, db=db)
+            # Sync check-ins (last 90 days for comprehensive data)
+            checkin_result = await checkin_api.sync_checkin_data(days=90, db=db)
             new_checkins = checkin_result.data.get("total_new", 0) if checkin_result.data else 0
             
             logger.info(f"Initial sync completed: {new_comments} new comments, {new_checkins} new check-ins")
@@ -277,7 +277,7 @@ def _start_scheduler():
                     new_comments = result.data.get("new_comments", 0) if result.data else 0
                     
                     # Sync check-ins
-                    checkin_result = await checkin_api.sync_checkin_data(days=1, db=db)
+                    checkin_result = await checkin_api.sync_checkin_data(days=7, db=db)
                     new_checkins = checkin_result.data.get("total_new", 0) if checkin_result.data else 0
                     
                     logger.info(f"CRM auto-sync completed: {new_comments} new comments, {new_checkins} new check-ins")
