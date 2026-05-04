@@ -2076,6 +2076,19 @@
             ...settings.integrations,
             ...settingsData.integrations
           };
+          
+          // Map SMTP settings from backend format to frontend format
+          if (settingsData.integrations.smtp) {
+            settings.integrations.email = {
+              connected: settingsData.integrations.smtp.connected || false,
+              smtp_host: settingsData.integrations.smtp.host || '',
+              smtp_port: settingsData.integrations.smtp.port || '587',
+              smtp_user: settingsData.integrations.smtp.user || '',
+              smtp_pass: '', // Don't show password
+              from_name: settingsData.integrations.smtp.from_name || 'Hi-Tech AI Sales',
+              from_address: settingsData.integrations.smtp.from_address || ''
+            };
+          }
         }
         // Update escalation rules
         if (settingsData.escalation_rules) {
@@ -4139,8 +4152,42 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
     obj[parts[parts.length - 1]] = value;
   }
   async function saveSettings() {
-    await saveData();
-    alert('Settings saved.');
+    // Save SMTP settings to backend
+    const smtpHost = document.querySelector('input[placeholder="smtp.gmail.com"]')?.value || '';
+    const smtpPort = document.querySelectorAll('.field-input.mono')[1]?.value || '587';
+    const smtpUser = document.querySelector('input[placeholder="ai@hitechgroup.in"]')?.value || '';
+    const smtpPass = document.querySelector('input[type="password"]')?.value || '';
+    
+    if (smtpHost && smtpUser) {
+      try {
+        const response = await fetch('/api/settings/smtp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            host: smtpHost,
+            port: parseInt(smtpPort),
+            user: smtpUser,
+            password: smtpPass,
+            from_name: 'Hi-Tech AI Sales',
+            from_address: smtpUser
+          })
+        });
+        
+        if (response.ok) {
+          alert('✅ SMTP settings saved successfully!');
+          // Reload settings to show updated connection status
+          await loadData();
+        } else {
+          const error = await response.json();
+          alert(`❌ Failed to save SMTP settings: ${error.message || 'Unknown error'}`);
+        }
+      } catch (error) {
+        alert(`❌ Error saving SMTP settings: ${error.message}`);
+      }
+    } else {
+      await saveData();
+      alert('Settings saved.');
+    }
   }
   async function toggleSenior(id) {
     if (settings.seniors[id]) {
@@ -4149,8 +4196,29 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
       render();
     }
   }
-  function testConnection(name) {
-    alert(`Test connection to ${name}\n\nIn production, this would ping the API endpoint and verify credentials. For the demo, no live test is performed.`);
+  async function testConnection(name) {
+    if (name === 'email' || name === 'smtp') {
+      try {
+        const response = await fetch('/api/settings/test/smtp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 'connected') {
+          alert(`✅ SMTP Connection Successful!\n\n${result.message || 'Connected to SMTP server'}`);
+        } else if (result.status === 'not_configured') {
+          alert(`⚠️ SMTP Not Configured\n\nPlease enter SMTP settings and click Save first.`);
+        } else {
+          alert(`❌ SMTP Connection Failed\n\n${result.message || 'Unknown error'}`);
+        }
+      } catch (error) {
+        alert(`❌ Error testing SMTP connection:\n\n${error.message}`);
+      }
+    } else {
+      alert(`Test connection to ${name}\n\nIn production, this would ping the API endpoint and verify credentials. For the demo, no live test is performed.`);
+    }
   }
 
   // ============================================================
