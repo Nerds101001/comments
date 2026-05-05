@@ -487,3 +487,74 @@ async def mark_senior_msg_sent(conv_id: str, msg_id: int, db: AsyncSession = Dep
     msg.is_read = True
     await db.commit()
     return StatusResponse(status="ok")
+
+
+# ── SEND NUDGE EMAIL ─────────────────────────────────────────────────────────
+@router.post("/{conv_id}/send-email", response_model=StatusResponse)
+async def send_nudge_email(
+    conv_id: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Send the latest AI nudge (draft message) to the rep via email.
+    Includes their original CRM field comment + Mukul's follow-up message.
+    Reads as a direct message from Mukul — no AI mentions.
+    """
+    from app.services.email_service import send_nudge_email as _send
+    from app.models import CRMComment
+
+    conv = await _get_conv(conv_id, db)
+    rep = conv.rep
+    customer = conv.customer
+
+    if not rep:
+        raise HTTPException(400, "No rep linked to this conversation")
+    if not rep.email:
+        raise HTTPException(400, f"No email address on file for {rep.name}. Add it in Settings → Team.")
+
+    # Get the latest draft/sent nudge from Mukul
+    nudge_msg = None
+    for m in reversed(conv.messages):
+        if m.from_who == "mukul" and m.text:
+            nudge_msg = m
+            break
+
+    if not nudge_msg:
+        raise HTTPException(400, "No nudge message found in this conversation to send.")
+
+    # Get the original CRM comment text if linked
+    crm_comment_text = ""
+    comment_date = ""
+    if conv.crm_ref:
+        crm_result = await db.execute(
+            select(CRMComment).where(CRMComment.crm_comment_id == conv.crm_ref)
+        )
+        crm_comment = crm_result.scalar_one_or_none()
+        if crm_comment:
+            crm_comment_text = crm_comment.raw_text or ""
+            comment_date = crm_comment.comment_date or ""
+
+    # Fallback: use conversation intel/topic as context
+    if not crm_comment_text:
+        crm_comment_text = conv.intel or conv.objective or conv.topic or ""
+
+    customer_name = customer.name if customer else conv.topic
+
+    success = await _send(
+        rep_email=rep.email,
+        rep_name=rep.name,
+        customer_name=customer_name,
+        crm_comment=crm_comment_text,
+        comment_date=comment_date,
+        nudge_text=nudge_msg.text,
+        mukul_name=settings.MUKUL_NAME,
+    )
+
+    if not success:
+        raise HTTPException(500, "Failed to send email. Check SMTP settings in Settings page.")
+
+    return StatusResponse(
+        status="ok",
+        message=f"Email sent to {rep.name} ({rep.email})",
+        data={"rep_email": rep.email, "rep_name": rep.name},
+    )

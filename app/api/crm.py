@@ -93,24 +93,24 @@ async def get_sync_status(db: AsyncSession = Depends(get_db)):
     new_comments_count = 0
     if last_sync:
         try:
-            last_sync_dt = datetime.fromisoformat(last_sync)
+            last_sync_dt = datetime.fromisoformat(last_sync.replace("Z", "").replace("+00:00", ""))
             new_comments_result = await db.execute(
                 select(CRMComment).where(CRMComment.created_at >= last_sync_dt)
             )
             new_comments_count = len(new_comments_result.scalars().all())
-        except:
+        except Exception:
             pass
     
     # Count new check-ins since last sync
     new_checkins_count = 0
     if last_checkin_sync:
         try:
-            last_checkin_sync_dt = datetime.fromisoformat(last_checkin_sync)
+            last_checkin_sync_dt = datetime.fromisoformat(last_checkin_sync.replace("Z", "").replace("+00:00", ""))
             new_checkins_result = await db.execute(
                 select(CheckIn).where(CheckIn.created_at >= last_checkin_sync_dt)
             )
             new_checkins_count = len(new_checkins_result.scalars().all())
-        except:
+        except Exception:
             pass
     
     return StatusResponse(
@@ -131,141 +131,139 @@ async def get_sync_status(db: AsyncSession = Depends(get_db)):
 # ── SYNC  (fetch fresh comments from CRM) ────────────────────────────────────
 @router.post("/sync", response_model=StatusResponse)
 async def sync_crm_comments(
-    hours_back: Optional[int] = Query(None, description="How many hours back to fetch (default: since last sync)"),
-    emp_code: Optional[str] = Query(None, description="Limit to one rep's emp_code"),
+    hours_back: Optional[int] = Query(None, description="Hours back for date-range sync"),
+    days_back: Optional[int] = Query(None, description="Days back for date-range sync (overrides hours_back)"),
+    emp_code: Optional[str] = Query(None, description="Override: limit to one specific rep's emp_code"),
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Pull comments from the CRM and store new ones locally.
-    Uses GetCustomersLastComment (per rep) + GetPipelineComment (date range).
-    
-    Incremental sync: If hours_back is not specified, fetches only new comments since last sync.
+    Pull comments from the CRM using GetCommentsReport via admin account
+    (Nagender, emp_code=1494) — ONE single call returns all reps' comments
+    for the given date range.
+
+    Default (no params): last 48 hours.
+    days_back=30  → last 30 days (manual sync)
+    days_back=182 → last 6 months (deep sync)
+
+    Already-processed records are skipped automatically via deduplication
+    (COMMENT_ID match), so re-syncing overlapping date ranges is safe.
     """
     from datetime import timedelta
     from app.models import AppSetting
-    
+
     today = datetime.utcnow()
-    
-    # Check last sync time for incremental sync
-    if hours_back is None:
-        last_sync_result = await db.execute(
-            select(AppSetting).where(AppSetting.key == "last_crm_sync")
-        )
-        last_sync_setting = last_sync_result.scalar_one_or_none()
-        
-        if last_sync_setting:
-            try:
-                last_sync_time = datetime.fromisoformat(last_sync_setting.value)
-                hours_back = int((today - last_sync_time).total_seconds() / 3600) + 1
-                logger.info(f"Incremental sync: fetching last {hours_back} hours since {last_sync_time}")
-            except:
-                hours_back = 1  # Default to 1 hour if parsing fails
-        else:
-            hours_back = 1  # First sync, fetch last hour
-    
-    from_dt = today - timedelta(hours=hours_back)
-    from_date = from_dt.strftime("%d-%m-%Y")
-    to_date = today.strftime("%d-%m-%Y")
+    admin_emp = settings.CRM_ADMIN_EMP_CODE  # "1494" — Nagender
 
-    # Load all reps to map emp_code → rep.id
-    reps_result = await db.execute(select(Rep))
-    all_reps = reps_result.scalars().all()
-    reps_by_emp: dict[str, Rep] = {r.emp_code: r for r in all_reps}
+    # Determine date range — plain int values when called internally, Query when via HTTP
+    _days_back  = int(days_back)  if days_back  is not None else None
+    _hours_back = int(hours_back) if hours_back is not None else None
 
-    # Load all customers to map comp_code → customer
+    if _days_back is not None:
+        delta_days = _days_back
+    elif _hours_back is not None:
+        delta_days = max(1, (_hours_back + 23) // 24)  # round up to full days
+    else:
+        delta_days = 2  # default: last 48 hours
+
+    from_date_str = (today - timedelta(days=delta_days)).strftime("%Y-%m-%d")
+    to_date_str   = today.strftime("%Y-%m-%d")
+    target_emp    = emp_code or admin_emp
+
+    logger.info("CRM comment sync via GetCommentsReport: emp=%s %s → %s (%d days)",
+                target_emp, from_date_str, to_date_str, delta_days)
+
+    # Load customers and reps for lookup
     custs_result = await db.execute(select(Customer))
-    all_custs = custs_result.scalars().all()
-    custs_by_code: dict[str, Customer] = {c.comp_code: c for c in all_custs}
+    custs_by_code: dict[str, Customer] = {c.comp_code: c for c in custs_result.scalars().all()}
 
-    target_reps = [r for r in all_reps if not emp_code or r.emp_code == emp_code]
+    reps_result = await db.execute(select(Rep))
+    reps_by_emp: dict[str, Rep] = {r.emp_code: r for r in reps_result.scalars().all()}
+
+    # ONE admin call — returns all reps' comments for the date range
+    raw_comments = await crm_client.get_comments_report(
+        from_date=from_date_str,
+        to_date=to_date_str,
+        emp_code=target_emp,
+    )
+    logger.info("GetCommentsReport returned %d records", len(raw_comments))
+
     new_count = 0
 
-    for rep in target_reps:
-        comments = await crm_client.get_pipeline_comments(
-            emp_code=rep.emp_code,
-            from_date=from_date,
-            to_date=to_date,
-        )
-        for raw in comments:
-            crm_id = str(
-                raw.get("id") or raw.get("Id") or raw.get("ID") or
-                raw.get("commentId") or raw.get("CommentId") or raw.get("COMMENT_ID") or
-                raw.get("CommentID") or ""
-            )
+    for raw in raw_comments:
+        # Skip rows with no actual comment text
+        comment_text = str(raw.get("COMMENT") or "").strip()
+        if not comment_text:
+            continue
 
-            # Skip if already stored
-            if crm_id:
-                exists_result = await db.execute(
-                    select(CRMComment).where(CRMComment.crm_comment_id == crm_id)
+        crm_id      = str(raw.get("COMMENT_ID") or "")
+        comp_code   = str(raw.get("COMP_CODE") or "")
+        crm_emp_code = str(raw.get("EMP_CODE") or "")
+        comment_date = str(raw.get("CREATEDON") or "")
+
+        # Dedup by COMMENT_ID (skip if 0 or empty — use fallback)
+        if crm_id and crm_id != "0":
+            exists = await db.execute(
+                select(CRMComment).where(CRMComment.crm_comment_id == crm_id)
+            )
+            if exists.scalar_one_or_none():
+                continue
+        else:
+            # Fallback dedup: emp + comp + date + text prefix
+            if comment_text and crm_emp_code and comment_date:
+                exists2 = await db.execute(
+                    select(CRMComment).where(
+                        CRMComment.crm_emp_code == crm_emp_code,
+                        CRMComment.crm_comp_code == (comp_code or None),
+                        CRMComment.comment_date == comment_date,
+                        CRMComment.raw_text.startswith(comment_text[:80]),
+                    )
                 )
-                if exists_result.scalar_one_or_none():
+                if exists2.scalar_one_or_none():
                     continue
 
-            comment_text = (
-                raw.get("comment") or raw.get("Comment") or raw.get("COMMENT") or
-                raw.get("remarks") or raw.get("Remarks") or raw.get("REMARKS") or str(raw)
-            )
-            # CRM API returns COMP_CODE (ALL_CAPS) as seen in GetCustomersLastComment response
-            comp_code = str(
-                raw.get("compCode") or raw.get("CompCode") or raw.get("COMP_CODE") or
-                raw.get("comp_code") or ""
-            )
-            crm_emp_code = str(
-                raw.get("empCode") or raw.get("EmpCode") or raw.get("EMP_CODE") or
-                raw.get("emp_code") or rep.emp_code
-            )
-            comment_date = str(
-                raw.get("date") or raw.get("Date") or raw.get("DATE") or
-                raw.get("createdOn") or raw.get("CreatedOn") or raw.get("CREATED_ON") or
-                raw.get("createdAt") or raw.get("CreatedAt") or ""
-            )
+        customer = custs_by_code.get(comp_code)
+        rep      = reps_by_emp.get(crm_emp_code)
 
-            customer = custs_by_code.get(comp_code)
-
-            c = CRMComment(
-                crm_comment_id=crm_id or None,
-                rep_id=rep.id,
-                customer_id=customer.id if customer else None,
-                crm_emp_code=crm_emp_code,
-                crm_comp_code=comp_code or None,
-                raw_text=comment_text,
-                comment_date=comment_date,
-                resolution_status="pending",
-                created_at=datetime.utcnow(),
-            )
-            db.add(c)
-            new_count += 1
+        db.add(CRMComment(
+            crm_comment_id=crm_id if crm_id and crm_id != "0" else None,
+            rep_id=rep.id if rep else None,
+            customer_id=customer.id if customer else None,
+            crm_emp_code=crm_emp_code,
+            crm_comp_code=comp_code or None,
+            raw_text=comment_text,
+            comment_date=comment_date,
+            resolution_status="pending",
+            created_at=datetime.utcnow(),
+        ))
+        new_count += 1
 
     await db.commit()
-    
-    # Update last sync time
-    from app.models import AppSetting
+
+    # Update last sync timestamp
     last_sync_result = await db.execute(
         select(AppSetting).where(AppSetting.key == "last_crm_sync")
     )
     last_sync_setting = last_sync_result.scalar_one_or_none()
-    
+    now_iso = today.isoformat()
     if last_sync_setting:
-        last_sync_setting.value = today.isoformat() + "Z"
+        last_sync_setting.value = now_iso
         last_sync_setting.updated_at = today
     else:
-        last_sync_setting = AppSetting(
-            key="last_crm_sync",
-            value=today.isoformat() + "Z",
-            updated_at=today
-        )
-        db.add(last_sync_setting)
-    
+        db.add(AppSetting(key="last_crm_sync", value=now_iso, updated_at=today))
     await db.commit()
-    
-    logger.info("CRM sync: fetched %d new comments", new_count)
+
+    logger.info("CRM sync complete: %d new comments from %d CRM records (admin emp=%s)",
+                new_count, len(raw_comments), admin_emp)
     return StatusResponse(
         status="ok",
         message=f"Synced {new_count} new comments",
         data={
             "new_comments": new_count,
-            "last_sync": today.isoformat(),
-            "hours_back": hours_back
+            "crm_records_fetched": len(raw_comments),
+            "last_sync": now_iso,
+            "from_date": from_date_str,
+            "to_date": to_date_str,
+            "admin_emp_code": admin_emp,
         },
     )
 

@@ -43,6 +43,7 @@ class RepBase(BaseModel):
     role: str = "Sales Person"
     reports_to_id: Optional[str] = None
     is_active: bool = True
+    email: Optional[str] = None
 
 class RepCreate(RepBase):
     id: str

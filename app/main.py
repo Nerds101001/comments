@@ -24,7 +24,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
-from app.database import init_db, AsyncSessionLocal
+from app.database import init_db, _enable_wal, AsyncSessionLocal
 from app.models import Rep, Senior, Customer, Conversation, Message
 from app.api import conversations, whatsapp, crm, gmail, settings_api, dashboard, checkin, rep_dashboard
 from app.config import settings
@@ -42,6 +42,7 @@ FRONTEND_DIR = Path(__file__).parent.parent / "frontend"
 async def lifespan(app: FastAPI):
     logger.info("Hi-Tech AI Sales Org starting…")
     await init_db()
+    await _enable_wal()
     await _seed_if_empty()
     await _load_db_settings()
     _start_scheduler()
@@ -86,12 +87,12 @@ async def _run_initial_sync():
             from app.api import crm as crm_api
             from app.api import checkin as checkin_api
             
-            # Sync comments (only last 1 hour to avoid timeout)
-            result = await crm_api.sync_crm_comments(hours_back=1, emp_code=None, db=db)
+            # Sync comments — last 48 hours via GetCommentsReport (admin 1494)
+            result = await crm_api.sync_crm_comments(hours_back=48, days_back=None, emp_code=None, db=db)
             new_comments = result.data.get("new_comments", 0) if result.data else 0
             
-            # Sync check-ins (last 182 days = 6 months for comprehensive data)
-            checkin_result = await checkin_api.sync_checkin_data(days=182, db=db)
+            # Sync check-ins — last 7 days on startup
+            checkin_result = await checkin_api.sync_checkin_data(days=7, db=db)
             new_checkins = checkin_result.data.get("total_new", 0) if checkin_result.data else 0
             
             logger.info(f"Initial sync completed: {new_comments} new comments, {new_checkins} new check-ins")
@@ -295,11 +296,12 @@ def _start_scheduler():
                 from fastapi import Request
                 logger.info("CRM auto-poll: starting sync…")
                 try:
-                    # Sync comments
-                    result = await crm_api.sync_crm_comments(hours_back=1, emp_code=None, db=db)
+                    # Auto-sync: comments last 48h, check-ins last 7 days
+                    # Deduplication in sync functions ensures already-processed
+                    # records are skipped automatically — no double processing.
+                    result = await crm_api.sync_crm_comments(hours_back=48, days_back=None, emp_code=None, db=db)
                     new_comments = result.data.get("new_comments", 0) if result.data else 0
                     
-                    # Sync check-ins (7 days on schedule; full backfill done at startup)
                     checkin_result = await checkin_api.sync_checkin_data(days=7, db=db)
                     new_checkins = checkin_result.data.get("total_new", 0) if checkin_result.data else 0
                     
@@ -333,10 +335,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — allow same origin only in production; open in dev
+# CORS — allow all origins (Railway serves frontend from same domain via FileResponse,
+# but external tools / WhatsApp webhooks need open CORS)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if settings.DEBUG else ["http://localhost:8000"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

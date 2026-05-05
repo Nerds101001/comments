@@ -145,9 +145,12 @@ async def get_recent_comments(comp_code: str) -> list:
 async def get_customers_last_comment(emp_code: str) -> list:
     """
     GET /api/Reports/GetCustomersLastComment/{empCode}
-    Returns each customer's most recent comment for this rep.
-    Perfect for the daily AI processing loop.
-    
+    Returns each customer's most recent comment for this rep (or ALL reps when
+    called with the admin emp code).
+
+    When called with CRM_ADMIN_EMP_CODE (1494 — Nagender), the CRM returns the
+    latest comment for every customer across ALL reps in one single request.
+
     Response format:
     {
         "Data": [
@@ -171,9 +174,8 @@ async def get_customers_last_comment(emp_code: str) -> list:
     """
     try:
         data = await _get(f"/api/Reports/GetCustomersLastComment/{emp_code}")
-        if isinstance(data, list): 
+        if isinstance(data, list):
             return data
-        # The Data field contains the list of comments
         res = data.get("Data")
         if res is None:
             res = data.get("data") or data.get("Result")
@@ -181,6 +183,14 @@ async def get_customers_last_comment(emp_code: str) -> list:
     except Exception as exc:
         logger.error("get_customers_last_comment failed for %s: %s", emp_code, exc)
         return []
+
+
+async def get_all_customers_last_comment() -> list:
+    """
+    Fetch the latest comment for every customer across ALL reps using the
+    admin account (Nagender, emp_code=1494).  One single CRM call — no looping.
+    """
+    return await get_customers_last_comment(settings.CRM_ADMIN_EMP_CODE)
 
 
 # ─────────────────────────────────────────────────────────
@@ -193,18 +203,18 @@ async def get_checkin_data(
 ) -> list:
     """
     POST /api/Reports/GetCheckinData
-    Returns check-in records for all reps (or one rep if emp_code given).
+    Returns check-in records for all reps using the admin account (Nagender, 1494).
+    One single CRM call returns ALL reps' data — no per-rep looping needed.
 
-    IMPORTANT: API requires StartDate/EndDate keys in YYYY-MM-DD format.
-    Omitting EmpCode returns ALL reps' data (admin access required).
+    Pass emp_code only when you want a specific rep's data.
+    IMPORTANT: API requires StartDate/EndDate in YYYY-MM-DD format.
     """
     today = datetime.utcnow()
     body = {
         "StartDate": from_date or (today - timedelta(days=1)).strftime("%Y-%m-%d"),
-        "EndDate": to_date or today.strftime("%Y-%m-%d"),
+        "EndDate":   to_date   or today.strftime("%Y-%m-%d"),
+        "EmpCode":   int(emp_code) if emp_code else int(settings.CRM_ADMIN_EMP_CODE),
     }
-    if emp_code:
-        body["EmpCode"] = int(emp_code)
     try:
         data = await _post("/api/Reports/GetCheckinData", body)
         if isinstance(data, list): return data
@@ -271,18 +281,27 @@ async def get_comments_report(
     to_date: Optional[str] = None,
     emp_code: Optional[str] = None,
 ) -> list:
-    """POST /api/Reports/GetCommentsReport"""
+    """
+    POST /api/Reports/GetCommentsReport
+    Returns all comments within a date range for a given emp_code.
+    When called with the admin emp_code (1494 — Nagender), returns ALL reps' comments.
+
+    Payload: {"EmpCode": 1494, "StartDate": "YYYY-MM-DD", "EndDate": "YYYY-MM-DD"}
+
+    Response fields: COMMENT_ID, EMP_CODE, EMP_NAME, COMP_CODE, COMP_NAME,
+                     COMMENT, CREATEDON, DESIGNATION, STAGES, etc.
+    Records with COMMENT=None or COMMENT_ID=0 are activity rows with no text — skip them.
+    """
     today = datetime.utcnow()
     body = {
-        "fromDate": from_date or (today - timedelta(days=1)).strftime("%d-%m-%Y"),
-        "toDate":   to_date or today.strftime("%d-%m-%Y"),
+        "EmpCode": int(emp_code) if emp_code else int(settings.CRM_ADMIN_EMP_CODE),
+        "StartDate": from_date or (today - timedelta(days=1)).strftime("%Y-%m-%d"),
+        "EndDate":   to_date   or today.strftime("%Y-%m-%d"),
     }
-    if emp_code:
-        body["empCode"] = emp_code
     try:
         data = await _post("/api/Reports/GetCommentsReport", body)
         if isinstance(data, list): return data
-        res = data.get("data") or data.get("Data") or data.get("Result")
+        res = data.get("Data") or data.get("data") or data.get("Result")
         return res if isinstance(res, list) else []
     except Exception as exc:
         logger.error("get_comments_report failed: %s", exc)

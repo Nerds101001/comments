@@ -4,7 +4,6 @@ Check-in/Check-out service for tracking sales rep visits
 import logging
 from datetime import datetime, timedelta
 from typing import List, Dict, Optional
-import httpx
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,83 +13,10 @@ from app.models import CheckIn, Rep
 logger = logging.getLogger(__name__)
 
 
-async def get_crm_token() -> Optional[str]:
-    """Get authentication token from CRM"""
-    try:
-        async with httpx.AsyncClient(timeout=30) as client:
-            response = await client.post(
-                f"{settings.CRM_BASE_URL}/api/Authentication/dologin",
-                json={"username": settings.CRM_USERNAME, "password": settings.CRM_PASSWORD}
-            )
-            response.raise_for_status()
-            data = response.json()
-            return data.get("TokenKey")
-    except Exception as e:
-        logger.error(f"Failed to get CRM token: {e}")
-        return None
-
-
-async def fetch_checkin_data_from_crm(
-    emp_code: Optional[int] = None,
-    from_date: str = None,
-    to_date: str = None,
-) -> List[Dict]:
-    """
-    Fetch check-in/check-out data from CRM API.
-    
-    Args:
-        emp_code: Employee code (integer, optional - if None, gets ALL data)
-        from_date: Start date (YYYY-MM-DD format)
-        to_date: End date (YYYY-MM-DD format)
-    
-    Returns:
-        List of check-in records
-    """
-    token = await get_crm_token()
-    if not token:
-        logger.warning("CRM not configured or token fetch failed")
-        return []
-    
-    url = f"{settings.CRM_BASE_URL}/api/Reports/GetCheckinData"
-    
-    # CORRECT format: EmpCode, StartDate, EndDate with YYYY-MM-DD
-    payload = {
-        "StartDate": from_date,
-        "EndDate": to_date
-    }
-    
-    if emp_code:
-        payload["EmpCode"] = emp_code  # Capital E and C
-    
-    try:
-        async with httpx.AsyncClient(timeout=30) as client:
-            response = await client.post(
-                url,
-                headers={
-                    "Authorization": f"Bearer {token}",
-                    "Content-Type": "application/json"
-                },
-                json=payload
-            )
-            response.raise_for_status()
-            data = response.json()
-            
-            # Response format: {"Data": [...], "StatusMessage": "...", "StatusCode": 200}
-            if isinstance(data, dict) and "Data" in data:
-                return data["Data"] or []
-            elif isinstance(data, list):
-                return data
-            else:
-                return []
-                
-    except Exception as e:
-        logger.error(f"Failed to fetch check-in data for {emp_code}: {e}")
-        return []
-
-
 async def sync_checkin_data(db: AsyncSession, days: int = 182) -> Dict:
     """
-    Sync check-in data from CRM for all reps (admin fetch — no emp_code filter).
+    Sync check-in data from CRM using the admin account (Nagender, emp_code=1494).
+    ONE single CRM call returns all reps' check-in data — no per-rep looping.
 
     Args:
         db: Database session
@@ -105,7 +31,8 @@ async def sync_checkin_data(db: AsyncSession, days: int = 182) -> Dict:
     from_date = (today - timedelta(days=days)).strftime("%Y-%m-%d")
     to_date = today.strftime("%Y-%m-%d")
 
-    logger.info("Fetching ALL check-in data from %s to %s", from_date, to_date)
+    logger.info("Fetching ALL check-in data via admin (emp=%s) from %s to %s",
+                settings.CRM_ADMIN_EMP_CODE, from_date, to_date)
     checkins = await crm_client.get_checkin_data(
         emp_code=None, from_date=from_date, to_date=to_date
     )
@@ -120,19 +47,21 @@ async def sync_checkin_data(db: AsyncSession, days: int = 182) -> Dict:
     BATCH = 500
     for idx, checkin_data in enumerate(checkins):
         try:
+            crm_id_raw = checkin_data.get("ID") or checkin_data.get("Id")
+            crm_id = int(crm_id_raw) if crm_id_raw else None
+
             emp_code = str(checkin_data.get("EmpCode") or checkin_data.get("empCode") or "")
             if not emp_code or emp_code == "0":
                 continue
 
-            emp_name = checkin_data.get("EMP_NAME") or checkin_data.get("empName") or ""
+            emp_name  = checkin_data.get("EMP_NAME") or checkin_data.get("empName") or ""
             comp_code_raw = checkin_data.get("CompCode") or checkin_data.get("compCode") or ""
             comp_code = str(comp_code_raw) if str(comp_code_raw) not in ("0", "") else None
             comp_name = checkin_data.get("COMP_NAME") or checkin_data.get("compName") or None
 
-            # CreatedonApp is the actual check-in time; Createdon is server-received time
             ts_str = (
                 checkin_data.get("CreatedonApp") or checkin_data.get("createdonApp") or
-                checkin_data.get("Createdon") or checkin_data.get("createdon")
+                checkin_data.get("Createdon")    or checkin_data.get("createdon")
             )
             if not ts_str:
                 continue
@@ -140,34 +69,45 @@ async def sync_checkin_data(db: AsyncSession, days: int = 182) -> Dict:
             checkin_date = dt.strftime("%d-%m-%Y")
             checkin_time = dt.strftime("%H:%M:%S")
 
-            latitude = checkin_data.get("Latitude") or checkin_data.get("latitude")
+            latitude  = checkin_data.get("Latitude")  or checkin_data.get("latitude")
             longitude = checkin_data.get("Longitude") or checkin_data.get("longitude")
-            address = (
+            address   = (
                 checkin_data.get("CompAddress") or checkin_data.get("compAddress") or
-                checkin_data.get("Location") or checkin_data.get("location") or None
+                checkin_data.get("Location")    or checkin_data.get("location") or None
             )
 
-            existing = await db.execute(
-                select(CheckIn).where(
-                    and_(
-                        CheckIn.emp_code == emp_code,
-                        CheckIn.checkin_date == checkin_date,
-                        CheckIn.checkin_time == checkin_time,
+            # ── Primary dedup: CRM ID ─────────────────────────────────────────
+            if crm_id:
+                existing = await db.execute(
+                    select(CheckIn).where(CheckIn.crm_id == crm_id)
+                )
+                existing_record = existing.scalar_one_or_none()
+            else:
+                # Fallback: emp + date + time
+                existing = await db.execute(
+                    select(CheckIn).where(
+                        and_(
+                            CheckIn.emp_code    == emp_code,
+                            CheckIn.checkin_date == checkin_date,
+                            CheckIn.checkin_time == checkin_time,
+                        )
                     )
                 )
-            )
-            existing_record = existing.scalar_one_or_none()
+                existing_record = existing.scalar_one_or_none()
 
             if existing_record:
-                existing_record.comp_code = comp_code
-                existing_record.comp_name = comp_name
-                existing_record.latitude = str(latitude) if latitude else None
-                existing_record.longitude = str(longitude) if longitude else None
-                existing_record.address = address
+                # Update mutable fields
+                existing_record.crm_id     = crm_id or existing_record.crm_id
+                existing_record.comp_code  = comp_code
+                existing_record.comp_name  = comp_name
+                existing_record.latitude   = str(latitude)  if latitude  else None
+                existing_record.longitude  = str(longitude) if longitude else None
+                existing_record.address    = address
                 existing_record.updated_at = datetime.utcnow()
                 total_updated += 1
             else:
                 db.add(CheckIn(
+                    crm_id=crm_id,
                     emp_code=emp_code,
                     emp_name=emp_name,
                     comp_code=comp_code,
@@ -176,7 +116,7 @@ async def sync_checkin_data(db: AsyncSession, days: int = 182) -> Dict:
                     checkin_time=checkin_time,
                     checkout_time=None,
                     duration_minutes=None,
-                    latitude=str(latitude) if latitude else None,
+                    latitude=str(latitude)  if latitude  else None,
                     longitude=str(longitude) if longitude else None,
                     address=address,
                     remarks=None,

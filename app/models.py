@@ -55,6 +55,7 @@ class Rep(Base):
     rep_type: Mapped[str] = mapped_column(String(20), default="sales")      # sales/ccare/newbiz/admin/finance
     reports_to_id: Mapped[Optional[str]] = mapped_column(String(20), ForeignKey("seniors.id"), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    email: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)  # Rep's email address
 
     senior: Mapped[Optional["Senior"]] = relationship("Senior", back_populates="reps")
     conversations: Mapped[List["Conversation"]] = relationship("Conversation", back_populates="rep")
@@ -283,6 +284,7 @@ class CheckIn(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    crm_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True, unique=True, index=True)  # CRM's ID field
     emp_code: Mapped[str] = mapped_column(String(20), index=True)           # Employee code
     emp_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     comp_code: Mapped[Optional[str]] = mapped_column(String(30), nullable=True, index=True)

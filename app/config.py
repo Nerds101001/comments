@@ -38,7 +38,8 @@ class Settings(BaseSettings):
     CRM_TOKEN: str = ""
     CRM_USERNAME: str = ""
     CRM_PASSWORD: str = ""
-    CRM_POLL_INTERVAL_MINUTES: int = 60  # Auto-sync every 60 minutes (1 hour)
+    CRM_POLL_INTERVAL_MINUTES: int = 10080  # Auto-sync every 7 days (10080 min = 1 week)
+    CRM_ADMIN_EMP_CODE: str = "1494"     # Nagender — admin user with full data access
 
     # ── Gmail (optional) ─────────────────────
     GMAIL_CLIENT_ID: str = ""

@@ -204,6 +204,12 @@
     font-weight: 600;
   }
   .btn-orange:hover { background: #E68500; }
+  .btn-teal {
+    background: #0a9396; color: #fff;
+    font-weight: 600; border-radius: var(--radius-sm); padding: 6px 12px; font-size: 13px; border: none; cursor: pointer;
+  }
+  .btn-teal:hover { background: #007f82; }
+  .btn-teal:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn-secondary {
     background: var(--bg);
     color: var(--text);
@@ -2284,6 +2290,35 @@
     await saveData();
     render();
   }
+
+  async function sendNudgeEmail(convId) {
+    const btn = event?.target;
+    const origText = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Sending...'; }
+    try {
+      const r = await fetch('/api/conversations/' + convId + '/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const result = await r.json();
+      if (r.ok && result.status === 'ok') {
+        alert('✅ Email sent!\n\n' + result.message);
+      } else {
+        const msg = result.detail || result.message || 'Unknown error';
+        if (msg.includes('No email address')) {
+          alert('⚠️ No email on file for this rep.\n\nGo to Settings → Team, open the rep, and add their email address.');
+        } else if (msg.includes('SMTP')) {
+          alert('⚠️ SMTP not configured.\n\nGo to Settings → Email / SMTP and save your credentials.');
+        } else {
+          alert('❌ Failed to send email:\n\n' + msg);
+        }
+      }
+    } catch (e) {
+      alert('❌ Error: ' + e.message);
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = origText; }
+    }
+  }
   async function markSent(convId, msgIdx) {
     const conv = conversations.find(c => c.id === convId);
     if (!conv) return;
@@ -3114,9 +3149,11 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
           <div class="composer-buttons">
             ${isMukulHandling
               ? `<button class="btn btn-orange" onclick="sendAsMukul()">Send as you</button>
-                 <button class="btn btn-secondary" id="btnGenerate" onclick="handleGenerateNudge()">Get AI suggestion</button>
+                 <button class="btn btn-secondary" id="btnGenerate" onclick="handleGenerateNudge()">Get suggestion</button>
+                 <button class="btn btn-teal btn-sm" onclick="sendNudgeEmail('${conv.id}')" title="Send nudge to rep via email">✉ Email</button>
                  <button class="btn btn-ghost btn-sm" onclick="addRepReply()">Add rep reply</button>`
-              : `<button class="btn btn-primary" id="btnGenerate" onclick="handleGenerateNudge()">◆ Generate AI nudge</button>
+              : `<button class="btn btn-primary" id="btnGenerate" onclick="handleGenerateNudge()">◆ Generate nudge</button>
+                 <button class="btn btn-teal btn-sm" onclick="sendNudgeEmail('${conv.id}')" title="Send nudge to rep via email">✉ Email</button>
                  <button class="btn btn-secondary" onclick="addRepReply()">Add rep reply</button>`
             }
           </div>
@@ -3845,7 +3882,7 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
           <div class="sg-icon" style="background: var(--green-soft); color: var(--green);">⟳</div>
           <div class="sg-info">
             <div class="sg-title">CRM Sync Status</div>
-            <div class="sg-desc">Auto-syncs every 60 minutes · Fetches new comments and check-ins from CRM</div>
+            <div class="sg-desc">Auto-syncs every 7 days · Last 48h comments + 7d check-ins · Already-synced records skipped</div>
           </div>
           <span class="sg-status connected" id="crmSyncStatus">Loading...</span>
         </div>
@@ -3855,8 +3892,11 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
           </div>
         </div>
         <div class="settings-actions">
-          <button class="btn btn-primary btn-sm" id="btnManualSync" onclick="manualCRMSync()">
-            <span>⟳ Sync Now</span>
+          <button class="btn btn-primary btn-sm" id="btnManualSync" onclick="manualCRMSync('month')">
+            <span>⟳ Sync Last Month</span>
+          </button>
+          <button class="btn btn-secondary btn-sm" id="btnDeepSync" onclick="manualCRMSync('sixmonths')">
+            <span>⟳ Sync Last 6 Months</span>
           </button>
           <button class="btn btn-secondary btn-sm" onclick="loadCRMSyncStatus()">Refresh Status</button>
         </div>
@@ -3899,24 +3939,24 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
         <div class="settings-fields">
           <div class="field-row">
             <label class="field-label">SMTP Host</label>
-            <input class="field-input mono" type="text" value="${escapeHtml(ig.email.smtp_host)}" placeholder="smtp.gmail.com" onchange="updateSetting('integrations.email.smtp_host', this.value)">
+            <input id="smtp-host" class="field-input mono" type="text" value="${escapeHtml(ig.email.smtp_host)}" placeholder="smtp.hostinger.com" onchange="updateSetting('integrations.email.smtp_host', this.value)">
           </div>
           <div class="field-row">
             <label class="field-label">Port</label>
-            <input class="field-input mono" type="text" value="${escapeHtml(ig.email.smtp_port)}" onchange="updateSetting('integrations.email.smtp_port', this.value)">
+            <input id="smtp-port" class="field-input mono" type="text" value="${escapeHtml(ig.email.smtp_port)}" placeholder="587" onchange="updateSetting('integrations.email.smtp_port', this.value)">
           </div>
           <div class="field-row">
             <label class="field-label">Username</label>
-            <input class="field-input mono" type="text" value="${escapeHtml(ig.email.smtp_user)}" placeholder="ai@hitechgroup.in" onchange="updateSetting('integrations.email.smtp_user', this.value)">
+            <input id="smtp-user" class="field-input mono" type="text" value="${escapeHtml(ig.email.smtp_user)}" placeholder="admin@hitechgroup.in" onchange="updateSetting('integrations.email.smtp_user', this.value)">
           </div>
           <div class="field-row">
             <label class="field-label">Password</label>
-            <input class="field-input mono" type="password" value="${escapeHtml(ig.email.smtp_pass)}" onchange="updateSetting('integrations.email.smtp_pass', this.value)">
+            <input id="smtp-pass" class="field-input mono" type="password" value="${escapeHtml(ig.email.smtp_pass)}" onchange="updateSetting('integrations.email.smtp_pass', this.value)">
           </div>
         </div>
         <div class="settings-actions">
           <button class="btn btn-secondary btn-sm" onclick="testConnection('email')">Test connection</button>
-          <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save</button>
+          <button class="btn btn-primary btn-sm" onclick="saveSmtpSettings()">Save</button>
         </div>
       </div>
 
@@ -4038,6 +4078,10 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
           <div class="field-row">
             <label class="field-label">Employee code</label>
             <input class="field-input mono" type="text" value="${escapeHtml(r.emp_code || '')}" onchange="updateTeamField('${rid}','emp_code', this.value)">
+          </div>
+          <div class="field-row">
+            <label class="field-label">Email address <span style="font-size:10px;color:var(--teal);font-weight:600;">for nudge emails</span></label>
+            <input class="field-input mono" type="email" value="${escapeHtml(r.email || '')}" placeholder="rep@company.com" onchange="updateTeamField('${rid}','email', this.value)">
           </div>
           <div class="field-row">
             <label class="field-label">Region</label>
@@ -4454,20 +4498,31 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
   async function testConnection(name) {
     if (name === 'email' || name === 'smtp') {
       try {
+        // Auto-save current values before testing
+        const host = document.getElementById('smtp-host')?.value?.trim() || '';
+        const user = document.getElementById('smtp-user')?.value?.trim() || '';
+        const passRaw = document.getElementById('smtp-pass')?.value || '';
+        const pass = passRaw === '••••••••' ? '' : passRaw;
+        if (host && user) {
+          const port = document.getElementById('smtp-port')?.value?.trim() || '587';
+          const body = { host, port: parseInt(port) || 587, user, from_name: 'Hi-Tech AI Sales', from_address: user };
+          if (pass) body.password = pass;
+          await fetch('/api/settings/smtp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        }
         const response = await fetch('/api/settings/test/smtp', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' }
         });
         const result = await response.json();
         if (result.status === 'connected') {
-          alert(`✅ SMTP Connection Successful!\n\n${result.message || 'Connected'}`);
+          alert('✅ SMTP Connection Successful!\n\n' + (result.message || 'Connected'));
         } else if (result.status === 'not_configured') {
-          alert(`⚠️ SMTP Not Configured\n\nPlease enter SMTP settings and click Save first.`);
+          alert('⚠️ SMTP Not Configured\n\nPlease enter SMTP Host, Username and Password, then Save.');
         } else {
-          alert(`❌ SMTP Connection Failed\n\n${result.message || 'Unknown error'}`);
+          alert('❌ SMTP Connection Failed\n\n' + (result.message || 'Unknown error'));
         }
       } catch (error) {
-        alert(`❌ Error testing SMTP: ${error.message}`);
+        alert('❌ Error testing SMTP: ' + error.message);
       }
     } else if (name === 'aisensy') {
       try {
@@ -4611,56 +4666,47 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
     }
   }
 
-  async function manualCRMSync() {
-    const btn = document.getElementById('btnManualSync');
-    if (!btn) return;
-    
-    const originalHTML = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = '<span class="loader"></span> Syncing...';
-    
+  async function saveSmtpSettings() {
+    const host    = document.getElementById('smtp-host')?.value?.trim() || '';
+    const port    = document.getElementById('smtp-port')?.value?.trim() || '587';
+    const user    = document.getElementById('smtp-user')?.value?.trim() || '';
+    const passRaw = document.getElementById('smtp-pass')?.value || '';
+    const pass    = passRaw === '••••••••' ? '' : passRaw;
+    if (!host || !user) { alert('Please enter SMTP Host and Username.'); return; }
     try {
-      // Sync comments
-      const commentsResponse = await fetch('/api/crm/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      if (!commentsResponse.ok) {
-        const error = await commentsResponse.text();
-        throw new Error(error);
-      }
-      
-      const commentsResult = await commentsResponse.json();
-      const newComments = commentsResult.data?.new_comments || 0;
-      
-      // Sync check-ins — 182 days = 6 months full backfill
-      const checkinsResponse = await fetch('/api/checkin/sync?days=182', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      let newCheckins = 0;
-      if (checkinsResponse.ok) {
-        const checkinsResult = await checkinsResponse.json();
-        newCheckins = checkinsResult.data?.total_new || 0;
-      }
-      
-      alert(`✅ Sync completed!\n\n${newComments} new comments\n${newCheckins} new check-ins`);
-      
-      // Reload sync status
-      await loadCRMSyncStatus();
-      
-      // Reload conversations to show new data
-      await loadData();
-      render();
-      
-    } catch (error) {
-      console.error('Sync failed:', error);
-      alert(`❌ Sync failed:\n\n${error.message}`);
-    } finally {
-      btn.disabled = false;
-      btn.innerHTML = originalHTML;
+      const body = { host, port: parseInt(port) || 587, user, from_name: 'Hi-Tech AI Sales', from_address: user };
+      if (pass) body.password = pass;
+      const r = await fetch('/api/settings/smtp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (r.ok) { alert('✅ SMTP settings saved! Click Test connection to verify.'); await loadData(); }
+      else { const e = await r.json(); alert('❌ Failed: ' + (e.detail || e.message || 'Unknown error')); }
+    } catch (e) { alert('❌ Error: ' + e.message); }
+  }
+
+  async function manualCRMSync(mode) {
+    const isSix       = mode === 'sixmonths';
+    const commentDays = isSix ? 182 : 30;
+    const checkinDays = isSix ? 182 : 30;
+    const label       = isSix ? 'Last 6 Months' : 'Last Month';
+    const btn         = document.getElementById('btnManualSync');
+    const btnDeep     = document.getElementById('btnDeepSync');
+    if (btn)     { btn.disabled = true;     btn.innerHTML = '<span class="loader"></span> Syncing...'; }
+    if (btnDeep) { btnDeep.disabled = true; btnDeep.innerHTML = '<span class="loader"></span> Syncing...'; }
+    try {
+      const cr = await fetch('/api/crm/sync?days_back=' + commentDays, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      if (!cr.ok) throw new Error(await cr.text());
+      const cd = await cr.json();
+      const newComments = cd.data?.new_comments || 0;
+      const fetched     = cd.data?.crm_records_fetched || 0;
+      const ki = await fetch('/api/checkin/sync?days=' + checkinDays, { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+      let newCheckins = 0, updatedCheckins = 0;
+      if (ki.ok) { const kd = await ki.json(); newCheckins = kd.data?.total_new || 0; updatedCheckins = kd.data?.total_updated || 0; }
+      const checkinMsg = newCheckins > 0 ? newCheckins + ' new check-ins' : updatedCheckins > 0 ? '0 new (' + updatedCheckins + ' updated)' : '0 new check-ins';
+      alert('✅ Sync completed! (' + label + ')\n\nComments : ' + newComments + ' new (' + fetched + ' fetched from CRM)\nCheck-ins: ' + checkinMsg + '\n\nAlready-synced records were skipped.');
+      await loadCRMSyncStatus(); await loadData(); render();
+    } catch (e) { console.error('Sync failed:', e); alert('❌ Sync failed:\n\n' + e.message); }
+    finally {
+      if (btn)     { btn.disabled = false;     btn.innerHTML = '<span>⟳ Sync Last Month</span>'; }
+      if (btnDeep) { btnDeep.disabled = false; btnDeep.innerHTML = '<span>⟳ Sync Last 6 Months</span>'; }
     }
   }
 
