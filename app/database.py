@@ -59,7 +59,8 @@ async def init_db():
     """Create all tables and seed default data if needed."""
     from app.models import (  # noqa: F401 — ensure models are imported
         Rep, Senior, Customer, Conversation, Message, SeniorMessage,
-        StyleSample, StyleProfile, CRMComment, AppSetting
+        StyleSample, StyleProfile, CRMComment, AppSetting,
+        AIKnowledgeBase, CheckIn
     )
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
