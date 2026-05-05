@@ -180,6 +180,28 @@ async def test_integration(integration: str, db: AsyncSession = Depends(get_db))
         
         if not smtp_host or not smtp_user or not smtp_password:
             return StatusResponse(status="not_configured", message="SMTP not configured")
+
+        # ── Try Brevo first if key is saved ───────────────────────────────
+        brevo_key = smtp_settings_db.get("brevo_api_key", getattr(settings, "BREVO_API_KEY", ""))
+        if brevo_key:
+            try:
+                async with __import__("httpx").AsyncClient(timeout=15) as client:
+                    resp = await client.post(
+                        "https://api.brevo.com/v3/smtp/email",
+                        headers={"api-key": brevo_key, "Content-Type": "application/json"},
+                        json={
+                            "sender":      {"name": smtp_from_name, "email": smtp_from_address or smtp_user},
+                            "to":          [{"email": smtp_user}],
+                            "subject":     "Hi-Tech AI Sales — Brevo Test",
+                            "htmlContent": "<h2>✅ Brevo connected!</h2><p>Email delivery is working via Brevo API.</p>",
+                            "textContent": "Brevo connected! Email delivery is working.",
+                        },
+                    )
+                if resp.status_code in (200, 201):
+                    return StatusResponse(status="connected", message=f"✅ Test email sent via Brevo API to {smtp_user}")
+                return StatusResponse(status="error", message=f"Brevo API error {resp.status_code}: {resp.text[:100]}")
+            except Exception as exc:
+                return StatusResponse(status="error", message=f"Brevo test failed: {exc}")
         
         try:
             import smtplib
@@ -350,9 +372,7 @@ async def save_smtp_settings(
     password = request.get("password", "")
     from_name = request.get("from_name", "Hi-Tech AI Sales")
     from_address = request.get("from_address", "")
-    
-    if not host or not user:
-        raise HTTPException(400, "Missing required fields: host, user")
+    brevo_api_key = request.get("brevo_api_key", "")
 
     smtp_settings = {
         "smtp_host": host,
@@ -361,9 +381,12 @@ async def save_smtp_settings(
         "smtp_from_name": from_name,
         "smtp_from_address": from_address or user,
     }
-    # Only update password if a new one was provided
     if password:
         smtp_settings["smtp_password"] = password
+    if brevo_api_key:
+        smtp_settings["brevo_api_key"] = brevo_api_key
+        # Also update runtime settings immediately
+        settings.BREVO_API_KEY = brevo_api_key
     
     for key, value in smtp_settings.items():
         result = await db.execute(

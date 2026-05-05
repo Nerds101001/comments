@@ -54,6 +54,9 @@ class Settings(BaseSettings):
     EMAIL_FROM_NAME: str = "Hi-Tech AI Sales"
     EMAIL_FROM_ADDRESS: str = ""
 
+    # ── Brevo (HTTP email API — works on Railway, no SMTP ports needed) ──
+    BREVO_API_KEY: str = ""  # Free at https://app.brevo.com → SMTP & API → API Keys
+
     # ── Owner ────────────────────────────────
     MUKUL_PHONE: str = ""
     MUKUL_NAME: str = "Mukul Sareen"
