@@ -371,6 +371,15 @@ app.include_router(knowledge_base.router)
 # ─────────────────────────────────────────────────────────
 #  FRONTEND (serve index.html for all non-API routes)
 # ─────────────────────────────────────────────────────────
+@app.get("/fav.png", include_in_schema=False)
+async def favicon():
+    fav = FRONTEND_DIR / "fav.png"
+    if fav.exists():
+        return FileResponse(str(fav), media_type="image/png")
+    from fastapi import HTTPException
+    raise HTTPException(404, "favicon not found")
+
+
 @app.get("/", include_in_schema=False)
 async def serve_frontend(request: Request):
     if not is_authenticated(request):
