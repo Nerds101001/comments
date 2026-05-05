@@ -54,6 +54,8 @@ async def send_message(
         "buttons": [],
         "carouselCards": [],
         "location": {},
+        "attributes": {},
+        "paramsFallbackValue": {},
     }
 
     if media_url:
@@ -78,13 +80,12 @@ async def send_message(
 
 async def send_text_notification(destination: str, message: str) -> dict:
     """
-    Convenience wrapper: send a plain text message using the default
-    'hi_tech_notification' campaign template where {{1}} = message body.
-    Create this template in AiSensy dashboard first.
+    Send a nudge via WhatsApp using the CXNUDDGES campaign.
+    Template has one variable {{1}} = the full message body.
     """
     return await send_message(
         destination=destination,
-        campaign_name="hi_tech_notification",
+        campaign_name="CXNUDDGES",
         template_params=[message],
     )
 
