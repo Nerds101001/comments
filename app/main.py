@@ -18,15 +18,16 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
 from app.database import init_db, _enable_wal, AsyncSessionLocal
 from app.models import Rep, Senior, Customer, Conversation, Message
 from app.api import conversations, whatsapp, crm, gmail, settings_api, dashboard, checkin, rep_dashboard
+from app.api.auth import router as auth_router, is_authenticated
 from app.config import settings
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s — %(message)s")
@@ -345,6 +346,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Auth router (login/logout pages)
+app.include_router(auth_router)
+
 # API routers
 app.include_router(conversations.router)
 app.include_router(whatsapp.router)
@@ -368,7 +372,9 @@ app.include_router(knowledge_base.router)
 #  FRONTEND (serve index.html for all non-API routes)
 # ─────────────────────────────────────────────────────────
 @app.get("/", include_in_schema=False)
-async def serve_frontend():
+async def serve_frontend(request: Request):
+    if not is_authenticated(request):
+        return RedirectResponse("/login", status_code=302)
     index = FRONTEND_DIR / "index.html"
     if index.exists():
         return FileResponse(str(index))
@@ -376,10 +382,15 @@ async def serve_frontend():
 
 
 @app.get("/{path:path}", include_in_schema=False)
-async def catch_all(path: str):
+async def catch_all(path: str, request: Request):
     if path.startswith("api/"):
         from fastapi import HTTPException
         raise HTTPException(404, "API endpoint not found")
+    # Allow login/logout without auth check
+    if path in ("login", "logout"):
+        return RedirectResponse(f"/{path}", status_code=302)
+    if not is_authenticated(request):
+        return RedirectResponse("/login", status_code=302)
     index = FRONTEND_DIR / "index.html"
     if index.exists():
         return FileResponse(str(index))

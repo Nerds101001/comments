@@ -61,6 +61,9 @@ class Settings(BaseSettings):
     MUKUL_PHONE: str = ""
     MUKUL_NAME: str = "Mukul Sareen"
 
+    # ── App Password (login gate) ─────────────────────────────────────────
+    APP_PASSWORD: str = "Rustx@3100"
+
     # ── Escalation ───────────────────────────
     AI_CONFIDENCE_THRESHOLD: int = 88
     SENIOR_ESCALATION_WINDOW_HOURS: int = 24
