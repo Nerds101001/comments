@@ -26,7 +26,7 @@ router = APIRouter(tags=["auth"])
 # ── Config ────────────────────────────────────────────────────────────────────
 APP_PASSWORD = getattr(settings, "APP_PASSWORD", "Rustx@3100")
 COOKIE_NAME  = "hitech_session"
-COOKIE_MAX_AGE = 60 * 60 * 24 * 7  # 7 days
+COOKIE_MAX_AGE = 60 * 60 * 3  # 3 hours
 
 
 def _sign(value: str) -> str:
