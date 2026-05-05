@@ -3604,7 +3604,8 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
             ` : ''}
           </div>
 
-          <!-- Check-ins Sync Card -->
+          <!-- Check-ins Sync Card — DISABLED (re-enable by removing display:none wrapper) -->
+          <div style="display:none;">
           <div style="background: var(--surface); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-sm);">
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
               <div style="font-size: 24px;">📍</div>
@@ -3618,6 +3619,7 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
               </div>
             ` : ''}
           </div>
+          </div>
 
           <!-- Total Comments Card -->
           <div style="background: var(--surface); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-sm);">
@@ -3629,7 +3631,8 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
             <div style="font-size: 12px; color: var(--text-3);">Comments in database</div>
           </div>
 
-          <!-- Total Check-ins Card -->
+          <!-- Total Check-ins Card — DISABLED (re-enable by removing display:none wrapper) -->
+          <div style="display:none;">
           <div style="background: var(--surface); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-sm);">
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
               <div style="font-size: 24px;">✅</div>
@@ -3637,6 +3640,7 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
             </div>
             <div style="font-size: 28px; font-weight: 700; color: var(--text); margin-bottom: 4px;">${totalCheckins.toLocaleString()}</div>
             <div style="font-size: 12px; color: var(--text-3);">Check-ins in database</div>
+          </div>
           </div>
 
         </div>
@@ -3902,6 +3906,8 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
         </div>
       </div>
 
+      <!-- Visit Check-in/out App API — DISABLED (remove display:none to re-enable) -->
+      <div style="display:none;">
       <div class="settings-group">
         <div class="settings-group-head">
           <div class="sg-icon" style="background: var(--purple-soft); color: var(--purple);">⏱</div>
@@ -3926,6 +3932,7 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
           <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save</button>
         </div>
       </div>
+      </div><!-- end DISABLED visit check-in wrapper -->
 
       <div class="settings-group">
         <div class="settings-group-head">
@@ -4627,17 +4634,23 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
             <label class="field-label">Last Comments Sync</label>
             <div class="field-value mono">${lastSyncFormatted}</div>
           </div>
+          <!-- Check-in rows DISABLED — remove display:none to re-enable -->
+          <div style="display:none;">
           <div class="field-row">
             <label class="field-label">Last Check-ins Sync</label>
             <div class="field-value mono">${lastCheckinSyncFormatted}</div>
+          </div>
           </div>
           <div class="field-row">
             <label class="field-label">Total Comments</label>
             <div class="field-value"><strong>${syncData.total_count || 0}</strong> comments in database ${syncData.new_comments_since_last_sync > 0 ? `<span style="color: var(--green);">(+${syncData.new_comments_since_last_sync} new)</span>` : ''}</div>
           </div>
+          <!-- Check-in rows DISABLED — remove display:none to re-enable -->
+          <div style="display:none;">
           <div class="field-row">
             <label class="field-label">Total Check-ins</label>
             <div class="field-value"><strong>${syncData.total_checkins || 0}</strong> check-ins in database ${syncData.new_checkins_since_last_sync > 0 ? `<span style="color: var(--green);">(+${syncData.new_checkins_since_last_sync} new)</span>` : ''}</div>
+          </div>
           </div>
           <div class="field-row">
             <label class="field-label">Processed</label>
