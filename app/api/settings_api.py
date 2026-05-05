@@ -227,26 +227,39 @@ async def test_integration(integration: str, db: AsyncSession = Depends(get_db))
             last_error = None
             sent_via = None
 
-            # Port 465 → always SSL
-            if smtp_port == 465:
+            # Try 465 (SSL) first — Railway blocks 587 outbound.
+            # Order: 465 SSL → 587 STARTTLS → 2525 STARTTLS
+            attempts = [(465, "ssl"), (587, "starttls"), (2525, "starttls")]
+            # If user explicitly set 465, keep that order; otherwise always try 465 first
+            if smtp_port not in (465, 587, 2525):
+                attempts = [(smtp_port, "starttls")] + attempts
+
+            for port, mode in attempts:
                 try:
-                    _try_ssl(465)
-                    sent_via = "SSL:465"
+                    if mode == "ssl":
+                        _try_ssl(port)
+                        sent_via = f"SSL:{port}"
+                    else:
+                        s = smtplib.SMTP(smtp_host, port, timeout=20)
+                        try:
+                            s.ehlo()
+                            s.starttls(context=ctx)
+                            s.ehlo()
+                            s.login(smtp_user, smtp_password)
+                            s.send_message(msg)
+                            s.quit()
+                            sent_via = f"STARTTLS:{port}"
+                        except Exception:
+                            try: s.quit()
+                            except Exception: pass
+                            raise
+                    break  # success
+                except OSError as e:
+                    last_error = e
+                    continue  # port blocked, try next
                 except Exception as e:
                     last_error = e
-            else:
-                # Try STARTTLS first (port 587 or custom)
-                try:
-                    _try_starttls()
-                    sent_via = f"STARTTLS:{smtp_port}"
-                except Exception as e:
-                    last_error = e
-                    # Fallback: SSL on 465
-                    try:
-                        _try_ssl(465)
-                        sent_via = "SSL:465(fallback)"
-                    except Exception as e2:
-                        last_error = e2
+                    break  # auth/protocol error, stop trying
 
             if sent_via:
                 return StatusResponse(

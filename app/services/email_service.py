@@ -99,24 +99,54 @@ async def send_email(
                     )
                     msg.attach(part)
         
-        # Send email with SSL context for STARTTLS
         import ssl
         context = ssl.create_default_context()
-        
-        with smtplib.SMTP(smtp_host, smtp_port, timeout=15) as server:
-            server.starttls(context=context)
-            server.login(smtp_user, smtp_password)
-            
-            recipients = [to]
-            if cc:
-                recipients.extend(cc)
-            if bcc:
-                recipients.extend(bcc)
-            
-            server.send_message(msg, to_addrs=recipients)
-        
-        logger.info(f"Email sent successfully to {to}")
-        return True
+
+        recipients = [to]
+        if cc:
+            recipients.extend(cc)
+        if bcc:
+            recipients.extend(bcc)
+
+        # Try ports in order: 465 (SSL) → 587 (STARTTLS) → 2525 (STARTTLS)
+        # Railway blocks 587 outbound, so 465 is tried first.
+        ports_to_try = []
+        if smtp_port == 465:
+            ports_to_try = [(465, "ssl"), (587, "starttls"), (2525, "starttls")]
+        elif smtp_port == 587:
+            ports_to_try = [(465, "ssl"), (587, "starttls"), (2525, "starttls")]
+        else:
+            ports_to_try = [(smtp_port, "starttls"), (465, "ssl"), (587, "starttls"), (2525, "starttls")]
+
+        last_error = None
+        for port, mode in ports_to_try:
+            try:
+                if mode == "ssl":
+                    with smtplib.SMTP_SSL(smtp_host, port, context=context, timeout=15) as server:
+                        server.login(smtp_user, smtp_password)
+                        server.send_message(msg, to_addrs=recipients)
+                else:
+                    with smtplib.SMTP(smtp_host, port, timeout=15) as server:
+                        server.ehlo()
+                        server.starttls(context=context)
+                        server.ehlo()
+                        server.login(smtp_user, smtp_password)
+                        server.send_message(msg, to_addrs=recipients)
+                logger.info(f"Email sent to {to} via {smtp_host}:{port} ({mode})")
+                return True
+            except OSError as e:
+                # Network unreachable / port blocked — try next port
+                last_error = e
+                logger.warning(f"Port {port} unreachable: {e}, trying next...")
+                continue
+            except smtplib.SMTPException as e:
+                # Auth/protocol error — no point trying other ports with same creds
+                last_error = e
+                logger.error(f"SMTP error on {port}: {e}")
+                break
+
+        logger.error(f"All SMTP ports failed for {to}. Last error: {last_error}")
+        return False
         
     except Exception as e:
         logger.error(f"Failed to send email to {to}: {e}")
