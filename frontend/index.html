@@ -2250,8 +2250,37 @@
         if (updatedConv) {
           Object.assign(conv, updatedConv);
         }
+        render();
+        // Auto-send the last draft message via WhatsApp
+        const freshConv = conversations.find(c => c.id === activeConvId);
+        if (freshConv) {
+          const lastIdx = freshConv.messages.length - 1;
+          const lastMsg = freshConv.messages[lastIdx];
+          if (lastMsg && lastMsg.status === 'draft' && lastMsg.from === 'mukul' && !lastMsg.requires_approval) {
+            // Auto-send via WhatsApp API
+            try {
+              const r = await fetch(`/api/conversations/${activeConvId}/send-whatsapp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message_index: lastIdx })
+              });
+              const result = await r.json();
+              if (r.ok && result.status === 'ok') {
+                freshConv.messages[lastIdx].status = 'sent';
+                freshConv.messages[lastIdx].whatsapp_sent = true;
+                freshConv.messages[lastIdx].whatsapp_msg_id = result.message_id || null;
+                await saveData();
+                render();
+                showToast('✅ Nudge auto-sent via WhatsApp', 'success');
+              } else {
+                showToast('⚠️ Nudge generated but WhatsApp send failed — use Send button', 'error');
+              }
+            } catch(e) {
+              showToast('⚠️ Nudge generated but WhatsApp send failed — use Send button', 'error');
+            }
+          }
+        }
       }
-      render();
     } catch (e) {
       alert('Generation failed: ' + e.message);
     } finally {
@@ -2328,6 +2357,54 @@
     if (conv.handler === 'approval') { conv.handler = 'ai'; conv.handler_reason = null; }
     await saveData();
     render();
+  }
+
+  // ── Send via WhatsApp API (AiSensy) ──────────────────────────────────────
+  async function sendViaWhatsApp(convId, msgIdx) {
+    const conv = conversations.find(c => c.id === convId);
+    if (!conv) return;
+    const msg = conv.messages[msgIdx];
+    if (!msg) return;
+
+    const btn = event?.target;
+    const origHtml = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Sending...'; }
+
+    try {
+      const r = await fetch(`/api/conversations/${convId}/send-whatsapp`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message_index: msgIdx })
+      });
+      const result = await r.json();
+
+      if (r.ok && result.status === 'ok') {
+        // Update message status to sent
+        conv.messages[msgIdx].status = 'sent';
+        conv.messages[msgIdx].whatsapp_sent = true;
+        conv.messages[msgIdx].whatsapp_msg_id = result.message_id || null;
+        if (conv.handler === 'approval') { conv.handler = 'ai'; conv.handler_reason = null; }
+        await saveData();
+        render();
+        // Show brief success toast
+        showToast('✅ Sent via WhatsApp', 'success');
+      } else {
+        const errMsg = result.detail || result.message || 'Unknown error';
+        if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+        alert(`❌ WhatsApp send failed:\n\n${errMsg}\n\nCheck Settings → AiSensy to verify your API key.`);
+      }
+    } catch (e) {
+      if (btn) { btn.disabled = false; btn.innerHTML = origHtml; }
+      alert('❌ Error: ' + e.message);
+    }
+  }
+
+  function showToast(msg, type = 'success') {
+    const t = document.createElement('div');
+    t.style.cssText = `position:fixed;bottom:24px;right:24px;z-index:9999;padding:12px 20px;border-radius:8px;font-size:14px;font-weight:600;color:#fff;background:${type==='success'?'#34C759':'#FF3B30'};box-shadow:0 4px 16px rgba(0,0,0,.2);transition:opacity .3s;`;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
   }
   async function takeOver(convId) {
     const conv = conversations.find(c => c.id === convId);
@@ -3081,19 +3158,25 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
 
       let footHtml = '';
       if (m.from === 'mukul') {
-        if (m.status === 'sent') footHtml = `<div class="msg-foot">${escapeHtml(m.ts)} ✓✓</div>`;
-        else if (m.status === 'draft') footHtml = `<div class="msg-foot">${escapeHtml(m.ts)} · awaiting send</div>`;
+        if (m.status === 'sent' && m.whatsapp_sent) {
+          const deliveryIcon = m.whatsapp_delivered ? '✓✓' : '✓';
+          const readIcon = m.whatsapp_read ? '<span style="color:#53bdeb">✓✓</span>' : deliveryIcon;
+          footHtml = `<div class="msg-foot">${escapeHtml(m.ts)} ${readIcon} <span style="font-size:10px;opacity:0.7;">📲 WhatsApp</span></div>`;
+        } else if (m.status === 'sent') {
+          footHtml = `<div class="msg-foot">${escapeHtml(m.ts)} ✓✓</div>`;
+        } else if (m.status === 'draft') {
+          footHtml = `<div class="msg-foot">${escapeHtml(m.ts)} · <span style="color:var(--orange)">awaiting send</span></div>`;
+        }
       } else {
         footHtml = `<div class="msg-foot">${escapeHtml(m.ts)}</div>`;
       }
 
       let actionsHtml = '';
       if (m.status === 'draft' && m.from === 'mukul') {
-        const link = `https://wa.me/${rep.phone}?text=${encodeURIComponent(m.text)}`;
         actionsHtml = m.requires_approval
           ? `<div class="msg-actions"><span style="opacity: 0.85; padding: 4px 9px;">⏸ Approve in handler bar above</span></div>`
           : `<div class="msg-actions">
-              <a href="${link}" target="_blank" rel="noopener" onclick="markSent('${conv.id}', ${idx})">Send WhatsApp</a>
+              <button class="btn btn-primary btn-sm" onclick="sendViaWhatsApp('${conv.id}', ${idx})">📲 Send WhatsApp</button>
               <button onclick="markSent('${conv.id}', ${idx})">Mark sent</button>
             </div>`;
       }

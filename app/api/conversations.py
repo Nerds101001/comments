@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -558,3 +559,85 @@ async def send_nudge_email(
         message=f"Email sent to {rep.name} ({rep.email})",
         data={"rep_email": rep.email, "rep_name": rep.name},
     )
+
+
+# ── Send WhatsApp nudge via AiSensy ──────────────────────────────────────────
+class SendWhatsAppRequest(BaseModel):
+    message_index: Optional[int] = None  # if None, sends the latest draft
+
+
+@router.post("/{conv_id}/send-whatsapp", response_model=StatusResponse)
+async def send_nudge_whatsapp(
+    conv_id: str,
+    body: SendWhatsAppRequest = SendWhatsAppRequest(),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Send a nudge message to the rep via WhatsApp (AiSensy API).
+    Uses the CXNUDDGES campaign template.
+    Marks the message as sent and stores the AiSensy message ID for tracking.
+    """
+    from app.services import aisensy_client
+
+    conv = await _get_conv(conv_id, db)
+    rep = conv.rep
+
+    if not rep:
+        raise HTTPException(400, "No rep linked to this conversation")
+    if not rep.phone:
+        raise HTTPException(400, f"No phone number on file for {rep.name}")
+
+    # Find the message to send
+    msg = None
+    msg_db = None
+    if body.message_index is not None:
+        msgs = conv.messages
+        if body.message_index < len(msgs):
+            msg = msgs[body.message_index]
+    else:
+        # Find latest draft from mukul
+        for m in reversed(conv.messages):
+            if m.from_who == "mukul" and m.status == "draft":
+                msg = m
+                break
+
+    if not msg:
+        # Fall back to latest mukul message
+        for m in reversed(conv.messages):
+            if m.from_who == "mukul":
+                msg = m
+                break
+
+    if not msg:
+        raise HTTPException(400, "No message found to send")
+
+    # Clean phone number — strip + and spaces
+    phone = rep.phone.replace("+", "").replace(" ", "").strip()
+
+    try:
+        result = await aisensy_client.send_message(
+            destination=phone,
+            campaign_name="CXNUDDGES",
+            template_params=[msg.text],
+        )
+
+        # Mark message as sent in DB
+        msg.status = "sent"
+        msg.is_read = True
+        if hasattr(msg, 'whatsapp_msg_id'):
+            msg.whatsapp_msg_id = result.get("submitted_message_id", "")
+        await db.commit()
+
+        return StatusResponse(
+            status="ok",
+            message=f"WhatsApp sent to {rep.name} ({phone})",
+            data={
+                "rep_name": rep.name,
+                "phone": phone,
+                "message_id": result.get("submitted_message_id", ""),
+                "aisensy_response": result,
+            },
+        )
+
+    except Exception as exc:
+        raise HTTPException(500, f"WhatsApp send failed: {str(exc)}")
