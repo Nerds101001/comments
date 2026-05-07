@@ -88,9 +88,13 @@ async def list_conversations(
     if source == "checkin":
         # Check-in conversations have crm_ref like "checkin_%"
         q = q.where(Conversation.crm_ref.like("checkin_%"))
-    elif source == "comment":
-        # Comment-based conversations don't have "checkin_" prefix
-        q = q.where(~Conversation.crm_ref.like("checkin_%") | (Conversation.crm_ref == None))
+    else:
+        # DEFAULT: always exclude check-in conversations from inbox
+        # (check-in module is disabled — use source=checkin to see them)
+        q = q.where(
+            (Conversation.crm_ref == None) |
+            (~Conversation.crm_ref.like("checkin_%"))
+        )
 
     # Add pagination
     q = q.limit(limit).offset(offset)

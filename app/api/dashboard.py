@@ -15,8 +15,13 @@ router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
 
 @router.get("", response_model=DashboardStats)
 async def get_dashboard(db: AsyncSession = Depends(get_db)):
-    # Conversation counts by handler
-    convs_result = await db.execute(select(Conversation))
+    # Conversation counts by handler — exclude check-in conversations
+    convs_result = await db.execute(
+        select(Conversation).where(
+            (Conversation.crm_ref == None) |
+            (~Conversation.crm_ref.like("checkin_%"))
+        )
+    )
     convs = convs_result.scalars().all()
 
     total = len(convs)
