@@ -214,10 +214,10 @@ class CRMComment(Base):
     crm_comment_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, unique=True)
     rep_id: Mapped[Optional[str]] = mapped_column(String(20), ForeignKey("reps.id"), nullable=True)
     customer_id: Mapped[Optional[str]] = mapped_column(String(20), ForeignKey("customers.id"), nullable=True)
-    crm_emp_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)   # emp code from CRM
-    crm_comp_code: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)  # comp code from CRM
+    crm_emp_code: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)   # emp code from CRM
+    crm_comp_code: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)  # comp code from CRM
     raw_text: Mapped[str] = mapped_column(Text)
-    comment_date: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    comment_date: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     processed_summary: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     followup_question: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     followup_sent: Mapped[bool] = mapped_column(Boolean, default=False)

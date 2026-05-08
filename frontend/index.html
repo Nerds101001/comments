@@ -1710,8 +1710,10 @@
               class="rep-search" 
               placeholder="Search representatives..."
               onkeyup="searchReps(this.value)"
+              onfocus="document.getElementById('rep-selector').style.display='block'"
+              onblur="setTimeout(()=>{ if(!document.getElementById('rep-selector').matches(':focus')) document.getElementById('rep-selector').style.display='none'; }, 200)"
             />
-            <select id="rep-selector" class="rep-selector" onchange="filterByRep(this.value)" size="8">
+            <select id="rep-selector" class="rep-selector" onchange="filterByRep(this.value)" size="8" style="display:none;">
               <option value="">All Representatives</option>
             </select>
           </div>
@@ -3215,7 +3217,7 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
       <div class="strategy-strip">
         <div class="strat-cell">
           <div class="strat-label">Topic / Customer</div>
-          <div class="strat-val">${escapeHtml(conv.topic)}${cust ? ' · <strong>' + escapeHtml(cust.name) + '</strong>' : ''}</div>
+          <div class="strat-val">${escapeHtml(conv.topic)}${cust ? ' · <strong style="cursor:pointer;color:var(--blue);text-decoration:underline dotted;" onclick="openCustomerProfile(\''+cust.id+'\')">' + escapeHtml(cust.name) + '</strong>' : ''}</div>
         </div>
         <div class="strat-cell">
           <div class="strat-label">Objective · conf ${conv.ai_confidence}%</div>
@@ -3226,8 +3228,12 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
           <div class="strat-val">${escapeHtml(conv.pipeline_stage)} · ${escapeHtml(conv.tactic)}</div>
         </div>
       </div>
-      <div class="messages" id="messages">${messagesHtml}</div>
+      <div class="messages" id="messages">
+        <div id="pastCommentsInline"></div>
+        ${messagesHtml}
+      </div>
       ${renderSeniorThreadPanel(conv)}
+
       <div class="composer">
         <div class="composer-row">
           <textarea class="composer-input" id="composerInput" placeholder="${escapeHtml(placeholder)}"></textarea>
@@ -3252,7 +3258,77 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
     setTimeout(() => {
       const m = document.getElementById('messages');
       if (m) m.scrollTop = m.scrollHeight;
+      // Auto-load past comments if customer is linked
+      if (conv.customer_id) {
+        loadPastComments(conv.customer_id, conv.id, conv.rep_id);
+      }
     }, 30);
+  }
+
+  // ── Past Comments for Customer ───────────────────────────────────────────
+
+  async function loadPastComments(customerId, currentConvId, repId) {
+    const inline = document.getElementById('pastCommentsInline');
+    if (!inline) return;
+    inline.innerHTML = '<div style="text-align:center;padding:8px;color:var(--text-3);font-size:12px;">Loading history...</div>';
+
+    try {
+      const r = await fetch(`/api/conversations/customer-profile/${customerId}`);
+      if (!r.ok) throw new Error('Failed');
+      const d = await r.json();
+
+      // Filter to current rep only, sorted oldest→newest
+      let comments = (d.comments || []).filter(c => c.rep_id === repId);
+      comments = comments.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+
+      if (!comments.length) {
+        inline.innerHTML = '';
+        return;
+      }
+
+      const statusColor = { resolved:'var(--green)', pending:'var(--orange)', escalated:'var(--red)', followup_sent:'var(--blue)' };
+      const repFirstName = comments[0].rep_name.split(' ')[0];
+
+      const rows = comments.map(c => `
+        <div style="display:flex;flex-direction:column;align-items:flex-start;margin-bottom:6px;">
+          <div style="max-width:80%;background:var(--surface);border:1px solid var(--separator);border-radius:12px 12px 12px 2px;padding:8px 12px;">
+            <div style="font-size:11px;color:var(--text-3);margin-bottom:3px;">${escapeHtml(c.date || '—')}</div>
+            <div style="font-size:13px;color:var(--text);line-height:1.5;">${escapeHtml(c.raw_text || '')}</div>
+            ${c.rep_reply ? `<div style="font-size:12px;color:var(--green);margin-top:4px;padding:3px 8px;background:var(--green-soft);border-radius:4px;">💬 ${escapeHtml(c.rep_reply)}</div>` : ''}
+          </div>
+          <div style="font-size:10px;color:var(--text-3);margin-top:2px;padding-left:4px;">${c.resolution_status}${c.confidence_score != null ? ' · ' + c.confidence_score + '%' : ''}</div>
+        </div>
+      `).join('');
+
+      inline.innerHTML = `
+        <div style="text-align:center;margin-bottom:12px;">
+          <span style="font-size:11px;color:var(--text-3);background:var(--surface);padding:3px 10px;border-radius:10px;border:1px solid var(--separator);">
+            📋 ${repFirstName}'s history with this customer · ${comments.length} past comments
+          </span>
+        </div>
+        ${rows}
+        <div style="text-align:center;margin:12px 0 4px;">
+          <span style="font-size:11px;color:var(--text-3);background:var(--surface);padding:3px 10px;border-radius:10px;border:1px solid var(--separator);">— Current conversation —</span>
+        </div>
+      `;
+
+      // Scroll to bottom so current messages are visible
+      const msgDiv = document.getElementById('messages');
+      if (msgDiv) msgDiv.scrollTop = msgDiv.scrollHeight;
+
+    } catch(e) {
+      const inline2 = document.getElementById('pastCommentsInline');
+      if (inline2) inline2.innerHTML = '';
+    }
+  }
+
+  function togglePastComments() {
+    const body = document.getElementById('pastCommentsBody');
+    const toggle = document.getElementById('pastCommentsToggle');
+    if (!body) return;
+    const isHidden = body.style.display === 'none';
+    body.style.display = isHidden ? 'block' : 'none';
+    if (toggle) toggle.textContent = isHidden ? '▲ Hide' : '▼ Show';
   }
 
   // ============================================================
@@ -5232,6 +5308,171 @@ Write your NEXT WhatsApp reply to ${senior.name.split(' ')[0]} based on what the
     }
   };
 
+  // ── Customer Profile Panel ────────────────────────────────────────────────
+  async function openCustomerProfile(customerId) {
+    const panel = document.getElementById('customerProfilePanel');
+    const body  = document.getElementById('customerProfileBody');
+    panel.classList.add('open');
+    body.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text-3);">Loading...</div>';
+
+    try {
+      const r = await fetch(`/api/conversations/customer-profile/${customerId}`);
+      if (!r.ok) throw new Error('Failed to load');
+      const d = await r.json();
+      const cu = d.customer;
+      const s  = d.summary;
+
+      const typeColors = {regular:'#34C759',new:'#007AFF',at_risk:'#FF9500',dormant:'#FF3B30'};
+      const typeColor  = typeColors[cu.cust_type] || '#888';
+
+      // Rep activity rows
+      const repRows = d.rep_activity.map(r => `
+        <tr>
+          <td style="padding:8px 12px;font-weight:600;">${escapeHtml(r.rep_name)}</td>
+          <td style="padding:8px 12px;text-align:center;">${r.total_comments}</td>
+          <td style="padding:8px 12px;text-align:center;color:var(--green);">${r.replied}</td>
+          <td style="padding:8px 12px;text-align:center;color:var(--orange);">${r.pending}</td>
+          <td style="padding:8px 12px;text-align:center;">${r.last_comment_date || '—'}</td>
+        </tr>`).join('');
+
+      // Comment timeline
+      const commentRows = d.comments.map(c => {
+        const statusColor = c.resolution_status === 'resolved' ? 'var(--green)' : c.resolution_status === 'pending' ? 'var(--orange)' : 'var(--text-3)';
+        const confBadge = c.confidence_score != null ? `<span style="font-size:11px;padding:2px 6px;border-radius:4px;background:var(--surface-2);margin-left:6px;">${c.confidence_score}%</span>` : '';
+        return `
+        <div style="border:1px solid var(--separator);border-radius:8px;padding:14px 16px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div style="font-size:12px;font-weight:600;color:var(--text-2);">${escapeHtml(c.rep_name)} · ${escapeHtml(c.date || '—')}</div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:11px;color:${statusColor};font-weight:600;">${c.resolution_status}</span>
+              ${confBadge}
+            </div>
+          </div>
+          <div style="font-size:13px;color:var(--text);margin-bottom:6px;">${escapeHtml(c.raw_text || '')}</div>
+          ${c.followup_question ? `<div style="font-size:12px;color:var(--blue);margin-top:6px;">❓ ${escapeHtml(c.followup_question)}</div>` : ''}
+          ${c.rep_reply ? `<div style="font-size:12px;color:var(--green);margin-top:6px;padding:6px 10px;background:var(--green-soft);border-radius:4px;">💬 ${escapeHtml(c.rep_reply)}</div>` : ''}
+        </div>`;
+      }).join('');
+
+      body.innerHTML = `
+        <!-- Header -->
+        <div style="padding:24px 24px 0;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;">
+            <div>
+              <div style="font-size:22px;font-weight:700;letter-spacing:-0.02em;">${escapeHtml(cu.name)}</div>
+              <div style="font-size:13px;color:var(--text-2);margin-top:4px;">
+                Comp Code: <strong>${escapeHtml(cu.comp_code)}</strong> · 
+                ${escapeHtml(cu.city)}${cu.state ? ', ' + escapeHtml(cu.state) : ''}
+              </div>
+            </div>
+            <span style="padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:${typeColor}22;color:${typeColor};text-transform:uppercase;">${cu.cust_type}</span>
+          </div>
+
+          <!-- Stats row -->
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;">
+            ${[
+              ['Conversations', s.total_conversations, 'var(--blue)'],
+              ['CRM Comments', s.total_comments, 'var(--purple)'],
+              ['Replied', s.replied_comments, 'var(--green)'],
+              ['Pending', s.pending_comments, 'var(--orange)'],
+            ].map(([label, val, color]) => `
+              <div style="background:var(--surface);border-radius:8px;padding:12px;text-align:center;">
+                <div style="font-size:24px;font-weight:700;color:${color};">${val}</div>
+                <div style="font-size:11px;color:var(--text-3);margin-top:2px;">${label}</div>
+              </div>`).join('')}
+          </div>
+
+          <!-- Products & LTV -->
+          <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+            ${cu.ltv ? `<div style="padding:6px 12px;background:var(--surface);border-radius:6px;font-size:12px;"><span style="color:var(--text-3);">LTV</span> <strong>${escapeHtml(cu.ltv)}</strong></div>` : ''}
+            ${cu.last_order_days != null ? `<div style="padding:6px 12px;background:var(--surface);border-radius:6px;font-size:12px;"><span style="color:var(--text-3);">Last order</span> <strong>${cu.last_order_days}d ago</strong></div>` : ''}
+            ${(cu.products_bought||[]).map(p => `<div style="padding:4px 10px;background:var(--blue-soft);color:var(--blue);border-radius:6px;font-size:11px;font-weight:600;">${escapeHtml(p)}</div>`).join('')}
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div style="border-bottom:1px solid var(--separator);padding:0 24px;display:flex;gap:0;">
+          ${['Comments', 'Rep Activity', 'Conversations'].map((tab, i) => `
+            <button onclick="cpTab(${i})" id="cpTab${i}" style="padding:10px 16px;border:none;background:none;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid ${i===0?'var(--blue)':'transparent'};color:${i===0?'var(--blue)':'var(--text-2)'};">${tab}</button>
+          `).join('')}
+        </div>
+
+        <!-- Tab content -->
+        <div style="padding:20px 24px;overflow-y:auto;max-height:calc(100vh - 380px);">
+          <div id="cpContent0">${commentRows || '<div style="color:var(--text-3);text-align:center;padding:40px;">No comments found</div>'}</div>
+          <div id="cpContent1" style="display:none;">
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+              <thead><tr style="border-bottom:1px solid var(--separator);">
+                <th style="padding:8px 12px;text-align:left;color:var(--text-3);">Rep</th>
+                <th style="padding:8px 12px;text-align:center;color:var(--text-3);">Comments</th>
+                <th style="padding:8px 12px;text-align:center;color:var(--text-3);">Replied</th>
+                <th style="padding:8px 12px;text-align:center;color:var(--text-3);">Pending</th>
+                <th style="padding:8px 12px;text-align:center;color:var(--text-3);">Last Visit</th>
+              </tr></thead>
+              <tbody>${repRows || '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-3);">No rep activity</td></tr>'}</tbody>
+            </table>
+          </div>
+          <div id="cpContent2" style="display:none;">
+            ${d.conversations.map(c => `
+              <div style="border:1px solid var(--separator);border-radius:8px;padding:12px 16px;margin-bottom:8px;cursor:pointer;" onclick="closeCustomerProfile();setActiveConv('${c.id}')">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                  <div style="font-size:13px;font-weight:600;">${escapeHtml(c.topic)}</div>
+                  <span style="font-size:11px;color:var(--text-3);">${c.updated_at ? c.updated_at.slice(0,10) : ''}</span>
+                </div>
+                <div style="font-size:12px;color:var(--text-2);margin-top:4px;">${escapeHtml(c.rep_name)} · ${c.message_count} msgs · ${c.rep_replies} rep replies · conf ${c.ai_confidence}%</div>
+              </div>`).join('') || '<div style="color:var(--text-3);text-align:center;padding:40px;">No conversations</div>'}
+          </div>
+        </div>
+      `;
+    } catch(e) {
+      body.innerHTML = `<div style="padding:40px;text-align:center;color:var(--red);">Error: ${e.message}</div>`;
+    }
+  }
+
+  function cpTab(idx) {
+    [0,1,2].forEach(i => {
+      const tab = document.getElementById('cpTab' + i);
+      const content = document.getElementById('cpContent' + i);
+      if (!tab || !content) return;
+      const active = i === idx;
+      tab.style.borderBottomColor = active ? 'var(--blue)' : 'transparent';
+      tab.style.color = active ? 'var(--blue)' : 'var(--text-2)';
+      content.style.display = active ? 'block' : 'none';
+    });
+  }
+
+  function closeCustomerProfile() {
+    document.getElementById('customerProfilePanel').classList.remove('open');
+  }
+
+  function setActiveConv(convId) {
+    setTab('inbox');
+    activeConvId = convId;
+    render();
+  }
+
 </script>
+
+<!-- Customer Profile Panel -->
+<div id="customerProfilePanel" style="
+  position:fixed;top:0;right:-520px;width:520px;height:100vh;
+  background:var(--bg);border-left:1px solid var(--separator);
+  box-shadow:-8px 0 32px rgba(0,0,0,.3);z-index:1000;
+  transition:right .3s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column;overflow:hidden;
+">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--separator);flex-shrink:0;">
+    <div style="font-size:14px;font-weight:700;color:var(--text-2);text-transform:uppercase;letter-spacing:.06em;">Customer Profile</div>
+    <button onclick="closeCustomerProfile()" style="background:none;border:none;color:var(--text-2);font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px;">✕</button>
+  </div>
+  <div id="customerProfileBody" style="flex:1;overflow-y:auto;"></div>
+</div>
+<div id="customerProfileOverlay" onclick="closeCustomerProfile()" style="
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:999;
+"></div>
+<style>
+  #customerProfilePanel.open { right: 0 !important; }
+  #customerProfilePanel.open ~ #customerProfileOverlay { display:block !important; }
+</style>
 </body>
 </html>

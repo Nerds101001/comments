@@ -645,3 +645,162 @@ async def send_nudge_whatsapp(
 
     except Exception as exc:
         raise HTTPException(500, f"WhatsApp send failed: {str(exc)}")
+
+
+# ── Customer Profile Report ───────────────────────────────────────────────────
+
+def _clean_raw_text(raw_text: str) -> str:
+    """
+    Extract clean comment text from raw_text.
+    Handles two cases:
+    1. Plain text (already clean) → return as-is
+    2. JSON dict stored as string → extract COMMENT field
+    """
+    if not raw_text:
+        return ""
+    text = raw_text.strip()
+    # Detect if it's a stored dict (starts with { or {'
+    if text.startswith("{") or text.startswith("{'"):
+        try:
+            import ast, json
+            # Try JSON first, then ast.literal_eval for Python dicts
+            try:
+                d = json.loads(text.replace("'", '"'))
+            except Exception:
+                d = ast.literal_eval(text)
+            comment = d.get("COMMENT") or d.get("comment") or ""
+            if not comment:
+                return ""  # activity row with no comment
+            return str(comment).strip()
+        except Exception:
+            return ""  # unparseable, skip
+    return text
+@router.get("/customer-profile/{customer_id}")
+async def get_customer_profile(customer_id: str, db: AsyncSession = Depends(get_db)):
+    """
+    Full customer profile: company info, all conversations, all CRM comments,
+    rep activity summary, reply patterns.
+    """
+    from app.models import Customer, CRMComment
+    from sqlalchemy.orm import selectinload as sl
+
+    # Get customer
+    cust_result = await db.execute(
+        select(Customer).where(Customer.id == customer_id)
+    )
+    cust = cust_result.scalar_one_or_none()
+    if not cust:
+        raise HTTPException(404, "Customer not found")
+
+    # All conversations for this customer (excluding checkin)
+    convs_result = await db.execute(
+        select(Conversation)
+        .options(sl(Conversation.messages), sl(Conversation.rep))
+        .where(Conversation.customer_id == customer_id)
+        .where(
+            (Conversation.crm_ref == None) |
+            (~Conversation.crm_ref.like("checkin_%"))
+        )
+        .order_by(Conversation.updated_at.desc())
+    )
+    convs = convs_result.scalars().all()
+
+    # All CRM comments for this customer
+    comments_result = await db.execute(
+        select(CRMComment)
+        .options(sl(CRMComment.rep))
+        .where(CRMComment.customer_id == customer_id)
+        .order_by(CRMComment.comment_date.desc())
+    )
+    comments = comments_result.scalars().all()
+
+    # Build rep activity summary
+    rep_activity = {}
+    for c in comments:
+        rep_name = c.rep.name if c.rep else (c.crm_emp_code or "Unknown")
+        if rep_name not in rep_activity:
+            rep_activity[rep_name] = {
+                "rep_name": rep_name,
+                "rep_id": c.rep_id,
+                "total_comments": 0,
+                "replied": 0,
+                "pending": 0,
+                "resolved": 0,
+                "last_comment_date": None,
+            }
+        rep_activity[rep_name]["total_comments"] += 1
+        if c.rep_reply:
+            rep_activity[rep_name]["replied"] += 1
+        if c.resolution_status == "resolved":
+            rep_activity[rep_name]["resolved"] += 1
+        elif c.resolution_status == "pending":
+            rep_activity[rep_name]["pending"] += 1
+        if c.comment_date and (
+            not rep_activity[rep_name]["last_comment_date"] or
+            c.comment_date > rep_activity[rep_name]["last_comment_date"]
+        ):
+            rep_activity[rep_name]["last_comment_date"] = c.comment_date
+
+    # Build comment timeline
+    comment_list = []
+    for c in comments:
+        clean_text = _clean_raw_text(c.raw_text or "")
+        if not clean_text:
+            continue  # skip activity rows with no comment text
+        comment_list.append({
+            "id": c.id,
+            "date": c.comment_date,
+            "rep_name": c.rep.name if c.rep else (c.crm_emp_code or "Unknown"),
+            "rep_id": c.rep_id,
+            "raw_text": clean_text,
+            "processed_summary": c.processed_summary,
+            "followup_question": c.followup_question,
+            "rep_reply": c.rep_reply,
+            "confidence_score": c.confidence_score,
+            "resolution_status": c.resolution_status,
+        })
+
+    # Conversation summary
+    conv_list = []
+    for conv in convs:
+        msg_count = len(conv.messages)
+        rep_replies = sum(1 for m in conv.messages if m.from_who == "rep")
+        conv_list.append({
+            "id": conv.id,
+            "topic": conv.topic,
+            "rep_name": conv.rep.name if conv.rep else "Unknown",
+            "rep_id": conv.rep_id,
+            "handler": conv.handler,
+            "ai_confidence": conv.ai_confidence,
+            "pipeline_stage": conv.pipeline_stage,
+            "message_count": msg_count,
+            "rep_replies": rep_replies,
+            "updated_at": conv.updated_at.isoformat() if conv.updated_at else None,
+        })
+
+    return {
+        "customer": {
+            "id": cust.id,
+            "name": cust.name,
+            "comp_code": cust.comp_code,
+            "city": cust.city,
+            "state": cust.state,
+            "cust_type": cust.cust_type,
+            "last_order_days": cust.last_order_days,
+            "ltv": cust.ltv,
+            "products_bought": cust.products_bought,
+            "cross_sell": cust.cross_sell,
+            "phone": cust.phone,
+        },
+        "summary": {
+            "total_conversations": len(convs),
+            "total_comments": len(comments),
+            "total_reps": len(rep_activity),
+            "replied_comments": sum(1 for c in comments if c.rep_reply),
+            "pending_comments": sum(1 for c in comments if c.resolution_status == "pending"),
+            "resolved_comments": sum(1 for c in comments if c.resolution_status == "resolved"),
+        },
+        "rep_activity": list(rep_activity.values()),
+        "conversations": conv_list,
+        "comments": comment_list,
+    }
