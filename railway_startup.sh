@@ -33,6 +33,10 @@ migrations = [
     # crm_comments additions
     \"\"\"ALTER TABLE crm_comments ADD COLUMN IF NOT EXISTS followup_sent_at TIMESTAMP\"\"\",
     \"\"\"ALTER TABLE crm_comments ADD COLUMN IF NOT EXISTS rep_reply_at TIMESTAMP\"\"\",
+    # crm_comments column size expansions
+    \"\"\"ALTER TABLE crm_comments ALTER COLUMN crm_emp_code TYPE VARCHAR(50)\"\"\",
+    \"\"\"ALTER TABLE crm_comments ALTER COLUMN crm_comp_code TYPE VARCHAR(50)\"\"\",
+    \"\"\"ALTER TABLE crm_comments ALTER COLUMN comment_date TYPE VARCHAR(50)\"\"\",
 ]
 
 async def run():
